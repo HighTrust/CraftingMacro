@@ -14,7 +14,7 @@ A **client-side Fabric mod for Minecraft Java 26.3** that lets you bind keys to 
 | | Version |
 |---|---|
 | Minecraft | **26.3** |
-| Fabric Loader | 0.20.1+ |
+| Fabric Loader | 0.18.0+ |
 | Fabric API | 0.165.2+26.3 |
 | Java | 25+ |
 
