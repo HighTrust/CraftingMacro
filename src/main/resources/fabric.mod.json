@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "craftingmacro",
+	"version": "${version}",
+	"name": "Crafting Macro",
+	"description": "Client-side macro manager: bind keys to commands, automatic crafting and custom action sequences, all configured in-game.",
+	"authors": [
+		"HighTrust"
+	],
+	"contact": {
+		"homepage": "https://github.com/HighTrust/CraftingMacro",
+		"sources": "https://github.com/HighTrust/CraftingMacro",
+		"issues": "https://github.com/HighTrust/CraftingMacro/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/craftingmacro/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"io.github.hightrust.craftingmacro.CraftingMacroClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
