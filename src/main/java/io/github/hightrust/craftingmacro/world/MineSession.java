@@ -56,10 +56,16 @@ public final class MineSession {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer p = mc.player;
 		if (p == null || mc.level == null) return StepResult.failed("Not in a world");
-		if (!PlayerActions.canUseMouseKeys()) {
+		boolean focused = PlayerActions.canUseMouseKeys();
+		boolean background = io.github.hightrust.craftingmacro.MacroManager.get().settings().backgroundMining;
+		if (!focused && !(background && mc.gui.screen() == null)) {
 			stopKeys();
-			return StepResult.failed("Mining needs the game focused with no menu open");
+			if (mc.gui.screen() != null && background) {
+				return StepResult.failed("Game paused when you tabbed out - press F3+P in-game to turn off pause on lost focus");
+			}
+			return StepResult.failed("Mining needs the game focused (or turn on 'Mine in background' in Settings)");
 		}
+		direct = !focused;
 		tick++;
 		skip.values().removeIf(exp -> exp < tick);
 
@@ -96,7 +102,24 @@ public final class MineSession {
 			PlayerActions.turnTowards(a[0], a[1]);
 			HitResult hit = mc.hitResult;
 			boolean onTarget = hit instanceof BlockHitResult bhr && hit.getType() == HitResult.Type.BLOCK && bhr.getBlockPos().equals(target);
-			PlayerActions.press(mc.options.keyAttack, onTarget);
+			if (direct) {
+				// Unfocused: vanilla ignores the attack key, so do exactly what its mining loop does.
+				PlayerActions.press(mc.options.keyAttack, false);
+				if (onTarget) {
+					BlockHitResult bhr = (BlockHitResult) hit;
+					if (mc.gameMode.continueDestroyBlock(target, bhr.getDirection())) {
+						var held = p.getItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND);
+						p.swing(net.minecraft.world.InteractionHand.MAIN_HAND, held.getAttackAnimation(), false);
+						p.connection.send(net.minecraft.network.protocol.game.ServerboundPunchPacket.INSTANCE);
+					}
+					directDestroying = true;
+				} else if (directDestroying) {
+					mc.gameMode.stopDestroyBlock();
+					directDestroying = false;
+				}
+			} else {
+				PlayerActions.press(mc.options.keyAttack, onTarget);
+			}
 			attacking = attacking || onTarget;
 		} else if (walk) {
 			PlayerActions.press(mc.options.keyAttack, false);
@@ -130,9 +153,16 @@ public final class MineSession {
 		stopKeys();
 	}
 
+	private boolean direct;
+	private boolean directDestroying;
+
 	private void stopKeys() {
 		attacking = false;
 		Minecraft mc = Minecraft.getInstance();
+		if (directDestroying && mc.gameMode != null) {
+			mc.gameMode.stopDestroyBlock();
+			directDestroying = false;
+		}
 		PlayerActions.press(mc.options.keyAttack, false);
 		PlayerActions.press(mc.options.keyUp, false);
 		PlayerActions.press(mc.options.keyJump, false);

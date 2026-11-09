@@ -20,7 +20,7 @@ public final class SettingsScreen extends BaseScreen {
 
 	@Override
 	protected int preferredHeight() {
-		return 270;
+		return 290;
 	}
 
 	@Override
@@ -55,6 +55,10 @@ public final class SettingsScreen extends BaseScreen {
 		toggle(x, y, w, "Prefer 2x2 inventory grid", s.preferInventoryGrid,
 				"Craft small recipes in the inventory grid instead of opening a crafting table",
 				v -> { s.preferInventoryGrid = v; dirty.run(); });
+		y += 18;
+		toggle(x, y, w, "Mine in background (tabbed out)", s.backgroundMining,
+				"Mining macros keep working while the game window isn't focused. Also press F3+P in-game so the game doesn't pause when you tab out.",
+				v -> { s.backgroundMining = v; dirty.run(); });
 		y += 24;
 		EditBox cmd = textField(x + 150, y, w - 150, s.craftOpenCommand, 128, "(disabled)",
 				"Command that opens a 3x3 crafting screen on your server, e.g. /craft or /workbench. Blank disables it.");
@@ -76,7 +80,7 @@ public final class SettingsScreen extends BaseScreen {
 	@Override
 	protected void extractContent(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
 		int x = panelX + 12;
-		int y = panelY + 34 + 18 * 7 + 6;
+		int y = panelY + 34 + 18 * 8 + 6;
 		label(g, "Crafting open command", x, y + 4);
 		label(g, "Server timeout (ticks)", x, y + 26);
 	}

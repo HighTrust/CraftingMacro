@@ -18,6 +18,11 @@ public final class Settings {
 	public boolean useLookedAtCraftingTable = true;
 	/** Prefer the 2x2 inventory grid for small recipes instead of opening a crafting table. */
 	public boolean preferInventoryGrid = true;
+	/**
+	 * Let mining keep working while the game window is unfocused (tabbed out). Requires vanilla's
+	 * "pause on lost focus" to be off (F3+P). Off by default.
+	 */
+	public boolean backgroundMining = false;
 	/** Maximum ticks to wait for the server to open a screen or confirm an inventory change. */
 	public int serverTimeoutTicks = 60;
 
@@ -32,6 +37,7 @@ public final class Settings {
 		s.useLookedAtCraftingTable = useLookedAtCraftingTable;
 		s.preferInventoryGrid = preferInventoryGrid;
 		s.serverTimeoutTicks = serverTimeoutTicks;
+		s.backgroundMining = backgroundMining;
 		return s;
 	}
 }

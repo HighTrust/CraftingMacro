@@ -72,8 +72,21 @@ public final class KeybindManager {
 	/** Start of tick, before vanilla processes key mappings. */
 	public static void startTick(Minecraft mc) {
 		MacroManager manager = MacroManager.get();
-		if (mc.player == null || !mc.isWindowActive()) {
+		if (mc.player == null) {
 			held.clear();
+			return;
+		}
+		// Toggled macros keep looping even while the window is unfocused (background mining).
+		continueToggles(manager, System.currentTimeMillis());
+		if (!mc.isWindowActive()) {
+			// Hold-mode macros can't be "held" while tabbed out: stop them.
+			for (Macro m : manager.macros()) {
+				if (m.trigger == TriggerMode.HOLD && heldIds.contains(m.id) && manager.executor().isRunning(m.id)) {
+					manager.executor().cancel(m.id, "Window lost focus");
+				}
+			}
+			held.clear();
+			heldIds.clear();
 			return;
 		}
 		Settings settings = manager.settings();
@@ -102,18 +115,6 @@ public final class KeybindManager {
 			// Hold mode: releasing the key stops the macro.
 			if (!down && wasDown && macro.trigger == TriggerMode.HOLD && running) {
 				manager.executor().cancel(macro.id, "Key released");
-			}
-
-			// Toggle mode: keep it going while toggled on; stop when finished / failed.
-			if (toggledOn.contains(macro.id) && !running) {
-				MacroRun.State last = manager.lastResult(macro.id);
-				boolean finished = macro.crafts() || last == MacroRun.State.FAILED || last == MacroRun.State.CANCELLED;
-				if (finished) {
-					toggledOn.remove(macro.id);
-				} else if (now >= nextHoldFire.getOrDefault(macro.id, 0L)) {
-					if (manager.trigger(macro, true, true)) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
-					else toggledOn.remove(macro.id);
-				}
 			}
 
 			if (!down || !allowed || !macro.availableOn(server)) continue;
@@ -152,6 +153,24 @@ public final class KeybindManager {
 		held.addAll(nowHeld);
 		heldIds.clear();
 		heldIds.addAll(nowHeldIds);
+	}
+
+	/** Toggle mode: re-run toggled-on macros when their previous run ends; stop on failure/cancel. */
+	private static void continueToggles(MacroManager manager, long now) {
+		if (toggledOn.isEmpty()) return;
+		for (Macro macro : manager.macros()) {
+			if (!toggledOn.contains(macro.id) || manager.executor().isRunning(macro.id)) continue;
+			MacroRun.State last = manager.lastResult(macro.id);
+			boolean finished = !macro.enabled || macro.crafts() || last == MacroRun.State.FAILED || last == MacroRun.State.CANCELLED;
+			if (finished) {
+				toggledOn.remove(macro.id);
+			} else if (now >= nextHoldFire.getOrDefault(macro.id, 0L)) {
+				if (manager.trigger(macro, true, true)) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
+				else toggledOn.remove(macro.id);
+			}
+		}
+		// drop ids of macros that no longer exist (deleted / profile switched)
+		toggledOn.removeIf(id -> manager.macros().stream().noneMatch(m -> m.id.equals(id)));
 	}
 
 	private static final Set<String> heldIds = new HashSet<>();
