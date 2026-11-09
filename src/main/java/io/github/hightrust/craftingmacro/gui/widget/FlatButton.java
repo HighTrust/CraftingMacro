@@ -55,8 +55,8 @@ public class FlatButton extends AbstractWidget {
 				hot = Theme.ACCENT_HOVER;
 			}
 			case DANGER -> {
-				base = 0xFF3A2024;
-				hot = Theme.DANGER;
+				base = 0xFF2A1220;
+				hot = 0xFF5A1830;
 			}
 			case GHOST -> {
 				base = 0x00000000;
@@ -68,12 +68,18 @@ public class FlatButton extends AbstractWidget {
 				hot = Theme.SURFACE_HOVER;
 			}
 		}
-		int color = active ? Theme.lerpColor(base, hot, hover) : 0xFF1A1E26;
+		int color = active ? Theme.lerpColor(base, hot, hover) : 0xFF141019;
 		if (!active) text = Theme.TEXT_FAINT;
 		else if (style == Style.GHOST) text = Theme.lerpColor(Theme.TEXT_DIM, Theme.TEXT, hover);
-		if ((color >>> 24) != 0) Theme.rounded(g, getX(), getY(), getWidth(), getHeight(), color);
-		if (style == Style.NORMAL && active) {
-			g.fill(getX() + 2, getY() + getHeight() - 1, getX() + getWidth() - 2, getY() + getHeight(), Theme.withAlpha(Theme.ACCENT, hover));
+		if (style == Style.PRIMARY && active) {
+			Theme.glow(g, getX(), getY(), getWidth(), getHeight(), Theme.ACCENT2, 0.6f + 0.6f * hover);
+			Theme.accentPill(g, getX(), getY(), getWidth(), getHeight(), hover);
+		} else if ((color >>> 24) != 0) {
+			Theme.rounded(g, getX(), getY(), getWidth(), getHeight(), color);
+		}
+		if (style == Style.NORMAL && active && hover > 0.01f) {
+			Theme.hGradient(g, getX() + 3, getY() + getHeight() - 1, getX() + getWidth() - 3, getY() + getHeight(),
+					Theme.withAlpha(Theme.ACCENT, hover), Theme.withAlpha(Theme.ACCENT2, hover));
 		}
 		Font font = Minecraft.getInstance().font;
 		String label = getMessage().getString();

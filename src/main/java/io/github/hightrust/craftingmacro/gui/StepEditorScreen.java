@@ -37,7 +37,12 @@ public final class StepEditorScreen extends BaseScreen {
 
 	@Override
 	protected int preferredHeight() {
-		return 230;
+		return 260;
+	}
+
+	/** Space taken by the type selector plus its wrapped description. */
+	private int descOffset() {
+		return 24 + font.split(Component.literal(step.type.description()), fieldW()).size() * 9 + 10;
 	}
 
 	private int fieldX() {
@@ -56,7 +61,7 @@ public final class StepEditorScreen extends BaseScreen {
 		button(fx, y, 18, "<", FlatButton.Style.NORMAL, () -> cycle(-1)).tooltip("Previous step type");
 		button(fx + 20, y, fw - 40, step.type.displayName(), FlatButton.Style.NORMAL, () -> cycle(1)).tooltip(step.type.description());
 		button(fx + fw - 18, y, 18, ">", FlatButton.Style.NORMAL, () -> cycle(1)).tooltip("Next step type");
-		y += 50;
+		y += descOffset();
 
 		switch (step.type) {
 			case COMMAND -> {
@@ -162,7 +167,7 @@ public final class StepEditorScreen extends BaseScreen {
 		int y = panelY + 34;
 		label(g, "Type", x, y + 5);
 		g.textWithWordWrap(font, Component.literal(step.type.description()), fieldX(), y + 22, fieldW(), Theme.TEXT_FAINT, false);
-		y += 50;
+		y += descOffset();
 		switch (step.type) {
 			case COMMAND, OPEN_CRAFTING -> label(g, "Command", x, y + 4);
 			case CRAFT -> {
@@ -178,7 +183,7 @@ public final class StepEditorScreen extends BaseScreen {
 				List<String> grid = step.grid();
 				for (int i = 0; i < 9; i++) {
 					int cx = fieldX() + (i % 3) * 19;
-					int cy = y - 8 + (i / 3) * 19;
+					int cy = y + (i / 3) * 19;
 					Theme.rounded(g, cx, cy, 18, 18, Theme.SURFACE);
 					Identifier id = Identifier.tryParse(grid.get(i));
 					if (!grid.get(i).isEmpty() && id != null && BuiltInRegistries.ITEM.containsKey(id)) {

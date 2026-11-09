@@ -50,11 +50,7 @@ public class ToggleSwitch extends AbstractWidget {
 		hover = Theme.approach(hover, isHoveredOrFocused() ? 1f : 0f, 0.3f);
 		int x = getX();
 		int y = getY() + 1;
-		int track = Theme.lerpColor(Theme.SWITCH_OFF, Theme.ACCENT, knob);
-		if (hover > 0) track = Theme.lerpColor(track, 0xFFFFFFFF, hover * 0.12f);
-		Theme.rounded(g, x, y, SWITCH_W, SWITCH_H, track);
-		int kx = x + 2 + Math.round((SWITCH_W - 12) * knob);
-		Theme.rounded(g, kx, y + 2, 8, SWITCH_H - 4, 0xFFF5F7FA);
+		Theme.toggle(g, x, y, knob, hover);
 		String label = getMessage().getString();
 		if (!label.isEmpty()) {
 			Font font = Minecraft.getInstance().font;

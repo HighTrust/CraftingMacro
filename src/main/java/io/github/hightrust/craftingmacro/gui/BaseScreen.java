@@ -55,9 +55,10 @@ public abstract class BaseScreen extends Screen {
 		float fade = Math.min(1f, (System.currentTimeMillis() - openedAt) / 150f);
 		g.fill(0, 0, width, height, Theme.withAlpha(Theme.OVERLAY, fade));
 		Theme.panel(g, panelX, panelY, panelW, panelH, Theme.PANEL, Theme.PANEL_BORDER);
-		// header strip
-		g.fill(panelX + 1, panelY + 24, panelX + panelW - 1, panelY + 25, Theme.PANEL_BORDER);
-		g.text(font, title, panelX + 10, panelY + 8, Theme.TEXT, false);
+		// header: accent bar + title + fading gradient divider
+		Theme.accentBar(g, panelX + 8, panelY + 7, 10, 1f);
+		g.text(font, title, panelX + 14, panelY + 8, Theme.TEXT, false);
+		Theme.hGradient(g, panelX + 1, panelY + 24, panelX + panelW - 1, panelY + 25, Theme.withAlpha(Theme.ACCENT, 0.7f), Theme.withAlpha(Theme.ACCENT2, 0.05f));
 	}
 
 	@Override

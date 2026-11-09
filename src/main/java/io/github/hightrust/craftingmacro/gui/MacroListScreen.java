@@ -29,6 +29,7 @@ public final class MacroListScreen extends BaseScreen {
 	private EditBox search;
 	private final List<Macro> filtered = new ArrayList<>();
 	private final Map<String, Float> rowHover = new HashMap<>();
+	private final Map<String, Float> switchAnim = new HashMap<>();
 	private double scroll;
 	private FlatButton stopBtn;
 
@@ -159,9 +160,12 @@ public final class MacroListScreen extends BaseScreen {
 			float h = Theme.approach(rowHover.getOrDefault(m.id, 0f), hovered ? 1f : 0f, 0.3f);
 			rowHover.put(m.id, h);
 			Theme.rounded(g, listX, y + 1, listW, ROW_H - 2, Theme.lerpColor(Theme.SURFACE, Theme.SURFACE_HOVER, h));
+			// hover tint sweeping from the left, like a highlighted module row
+			if (h > 0.01f) Theme.hGradient(g, listX + 2, y + 2, listX + listW / 2, y + ROW_H - 2, Theme.withAlpha(Theme.ACCENT, 0.18f * h), 0x00000000);
 
 			boolean running = mgr().executor().isRunning(m.id);
-			if (running) Theme.rounded(g, listX + 4, y + 9, 4, 4, Theme.ACCENT);
+			float pulse = running ? (float) (0.6 + 0.4 * Math.sin(System.currentTimeMillis() / 150.0)) : 1f;
+			Theme.accentBar(g, listX + 1, y + 4, ROW_H - 8, m.enabled ? pulse : 0.25f);
 
 			// key badge
 			String key = KeybindManager.label(m.key)
@@ -169,7 +173,7 @@ public final class MacroListScreen extends BaseScreen {
 			boolean conflict = KeybindConflicts.hasConflict(m, all);
 			int badgeW = font.width(key) + 8;
 			int badgeX = listX + listW - SWITCH_ZONE - badgeW;
-			Theme.rounded(g, badgeX, y + 6, badgeW, 12, conflict ? 0xFF4A2A10 : 0xFF11141A);
+			Theme.rounded(g, badgeX, y + 6, badgeW, 12, conflict ? 0xFF4A2A10 : 0xFF0D0A12);
 			g.text(font, key, badgeX + 4, y + 8, conflict ? Theme.WARNING : Theme.TEXT_DIM, false);
 
 			g.text(font, ellipsize(m.name, badgeX - listX - 18), listX + 12, y + 8, m.enabled ? Theme.TEXT : Theme.TEXT_FAINT, false);
@@ -177,17 +181,16 @@ public final class MacroListScreen extends BaseScreen {
 			// switch
 			int sx = listX + listW - 8 - 22;
 			boolean swHover = hovered && mouseX >= listX + listW - SWITCH_ZONE;
-			int track = m.enabled ? Theme.ACCENT : Theme.SWITCH_OFF;
-			if (swHover) track = Theme.lerpColor(track, 0xFFFFFFFF, 0.15f);
-			Theme.rounded(g, sx, y + 6, 22, 12, track);
-			Theme.rounded(g, m.enabled ? sx + 12 : sx + 2, y + 8, 8, 8, 0xFFF5F7FA);
+			float knob = Theme.approach(switchAnim.getOrDefault(m.id, m.enabled ? 1f : 0f), m.enabled ? 1f : 0f, 0.3f);
+			switchAnim.put(m.id, knob);
+			Theme.toggle(g, sx, y + 6, knob, swHover ? 1f : 0f);
 		}
 		g.disableScissor();
 		int content = filtered.size() * ROW_H;
 		if (content > listH) {
 			int barH = Math.max(16, listH * listH / content);
 			int barY = listY + (int) ((listH - barH) * (scroll / (content - listH)));
-			g.fill(listX + listW + 2, barY, listX + listW + 4, barY + barH, 0xFF3A4252);
+			g.fillGradient(listX + listW + 2, barY, listX + listW + 4, barY + barH, Theme.ACCENT, Theme.ACCENT2);
 		}
 		drawStatus(g);
 	}
