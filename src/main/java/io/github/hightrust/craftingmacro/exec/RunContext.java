@@ -17,6 +17,8 @@ public final class RunContext {
 	public int itemsCrafted;
 	/** Ticks spent in the current step. */
 	public int stepTicks;
+	/** Hold/toggle mode: crafting steps craft as much as possible instead of their quantity. */
+	public boolean unlimited;
 
 	public RunContext(Macro macro, LongSupplier clock) {
 		this.macro = macro;

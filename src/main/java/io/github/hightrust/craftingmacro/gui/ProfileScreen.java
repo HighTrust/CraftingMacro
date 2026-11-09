@@ -235,7 +235,7 @@ public final class ProfileScreen extends BaseScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == 0 && inside(event.x(), event.y(), listX, listY, listW, listH)) {
+		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && inside(event.x(), event.y(), listX, listY, listW, listH)) {
 			int idx = (int) ((event.y() - listY) / ROW_H) + scroll;
 			List<Profile> profiles = cfg().profiles;
 			if (idx >= 0 && idx < profiles.size()) {

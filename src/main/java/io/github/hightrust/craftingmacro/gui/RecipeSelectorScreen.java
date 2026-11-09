@@ -152,7 +152,7 @@ public final class RecipeSelectorScreen extends BaseScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == 0 && inside(event.x(), event.y(), gridX, gridY, gridW, gridH)) {
+		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && inside(event.x(), event.y(), gridX, gridY, gridW, gridH)) {
 			int col = (int) ((event.x() - gridX) / CELL);
 			int row = (int) ((event.y() - gridY) / CELL) + scrollRows;
 			int idx = row * columns() + col;

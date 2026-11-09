@@ -26,6 +26,7 @@ public final class StepHandlers {
 		map.put(StepType.COMMAND, new CommandHandler());
 		map.put(StepType.OPEN_CRAFTING, new OpenCraftingHandler(settings));
 		map.put(StepType.CRAFT, new CraftHandler(settings));
+		map.put(StepType.CRAFT_PATTERN, new PatternHandler(settings));
 		map.put(StepType.WAIT_TICKS, new WaitTicksHandler());
 		map.put(StepType.WAIT_MS, new WaitMsHandler());
 		map.put(StepType.CLICK_SLOT, new ClickSlotHandler());
@@ -88,7 +89,9 @@ public final class StepHandlers {
 
 		@Override
 		public StepResult start(RunContext ctx, MacroStep step) {
-			ctx.stepState = new CraftingSession(step.text, step.amount, settings.get());
+			ctx.stepState = ctx.unlimited
+					? CraftingSession.asMuchAsPossible(step.text, settings.get())
+					: new CraftingSession(step.text, step.amount, settings.get());
 			return tick(ctx, step);
 		}
 
@@ -115,6 +118,45 @@ public final class StepHandlers {
 		@Override
 		public int timeoutTicks(RunContext ctx, MacroStep step) {
 			return ctx.stepState instanceof CraftingSession session ? session.timeoutTicks() : 600;
+		}
+	}
+
+	static final class PatternHandler implements StepHandler {
+		private final Supplier<Settings> settings;
+
+		PatternHandler(Supplier<Settings> settings) {
+			this.settings = settings;
+		}
+
+		@Override
+		public StepResult start(RunContext ctx, MacroStep step) {
+			ctx.stepState = new io.github.hightrust.craftingmacro.crafting.PatternCraftSession(step.grid(), step.amount, ctx.unlimited, settings.get());
+			return tick(ctx, step);
+		}
+
+		@Override
+		public StepResult tick(RunContext ctx, MacroStep step) {
+			var session = (io.github.hightrust.craftingmacro.crafting.PatternCraftSession) ctx.stepState;
+			StepResult r = session.tick();
+			if (!r.isRunning()) {
+				if (session.openedScreen()) ctx.openedCraftingScreen = true;
+				if (session.mustKeepScreenOpen()) ctx.openedCraftingScreen = false;
+				ctx.itemsCrafted += session.itemsCrafted();
+			}
+			return r;
+		}
+
+		@Override
+		public void cancel(RunContext ctx, MacroStep step) {
+			if (ctx.stepState instanceof io.github.hightrust.craftingmacro.crafting.PatternCraftSession session) {
+				session.cancel();
+				if (session.openedScreen()) ctx.openedCraftingScreen = true;
+			}
+		}
+
+		@Override
+		public int timeoutTicks(RunContext ctx, MacroStep step) {
+			return ctx.stepState instanceof io.github.hightrust.craftingmacro.crafting.PatternCraftSession s ? s.timeoutTicks() : 600;
 		}
 	}
 

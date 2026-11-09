@@ -55,6 +55,17 @@ public final class MacroValidator {
 				if (s.amount < 1) yield "quantity must be at least 1";
 				yield null;
 			}
+			case CRAFT_PATTERN -> {
+				boolean any = false;
+				for (String id : s.grid()) {
+					if (id.isEmpty()) continue;
+					if (!ITEM_ID.matcher(id).matches()) yield "invalid item in pattern: " + id;
+					any = true;
+				}
+				if (!any) yield "design a pattern (put at least one item in the grid)";
+				if (s.amount < 1) yield "amount must be at least 1";
+				yield null;
+			}
 			case WAIT_TICKS, WAIT_MS -> s.amount < 0 ? "wait cannot be negative" : null;
 			case CLICK_SLOT -> s.slot < 0 ? "slot cannot be negative" : null;
 			case MOVE_ITEMS -> {
@@ -82,6 +93,11 @@ public final class MacroValidator {
 		if (m.key == null) m.key = KeyCombo.unbound();
 		if (m.key.key == null || (!m.key.key.isEmpty() && !KEY_NAME.matcher(m.key.key).matches())) m.key = KeyCombo.unbound();
 		if (m.type == null) m.type = MacroType.SEQUENCE;
+		if (m.trigger == null) m.trigger = TriggerMode.CLICK;
+		if (m.holdToRepeat) {
+			if (m.trigger == TriggerMode.CLICK) m.trigger = TriggerMode.HOLD;
+			m.holdToRepeat = false;
+		}
 		if (m.steps == null) m.steps = new ArrayList<>();
 		m.steps.removeIf(s -> s == null || s.type == null);
 		while (m.steps.size() > MAX_STEPS) m.steps.remove(m.steps.size() - 1);
@@ -106,6 +122,14 @@ public final class MacroValidator {
 			case CRAFT -> {
 				s.amount = clamp(s.amount, 1, MAX_CRAFT_QUANTITY);
 				s.text = s.text.strip().toLowerCase(java.util.Locale.ROOT);
+			}
+			case CRAFT_PATTERN -> {
+				s.amount = clamp(s.amount, 1, MAX_CRAFT_QUANTITY);
+				List<String> g = s.grid();
+				g.replaceAll(id -> id.strip().toLowerCase(java.util.Locale.ROOT));
+				g.replaceAll(id -> ITEM_ID.matcher(id).matches() ? id : "");
+				s.pattern = new ArrayList<>(g);
+				s.text = clip(s.text.strip(), MAX_NAME);
 			}
 			case WAIT_TICKS -> s.amount = clamp(s.amount, 0, MAX_WAIT_TICKS);
 			case WAIT_MS -> s.amount = clamp(s.amount, 0, MAX_WAIT_MS);

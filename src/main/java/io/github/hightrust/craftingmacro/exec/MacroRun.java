@@ -27,6 +27,11 @@ public final class MacroRun {
 	private int warnings;
 	private String lastWarning = "";
 
+	public MacroRun(Macro macro, Map<?, StepHandler> handlers, LongSupplier clock, boolean unlimited) {
+		this(macro, handlers, clock);
+		this.ctx.unlimited = unlimited;
+	}
+
 	public MacroRun(Macro macro, Map<?, StepHandler> handlers, LongSupplier clock) {
 		this.macro = macro;
 		this.steps = SequenceFlattener.flatten(macro.steps, macro.repeatCount);

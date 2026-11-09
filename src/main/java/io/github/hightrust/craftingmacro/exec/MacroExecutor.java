@@ -63,12 +63,17 @@ public final class MacroExecutor {
 
 	/** @param ignoreCooldown used by hold-to-repeat, which paces itself */
 	public StartResult start(Macro macro, boolean ignoreCooldown) {
+		return start(macro, ignoreCooldown, false);
+	}
+
+	/** @param unlimited crafting steps craft as much as possible (hold / toggle mode) */
+	public StartResult start(Macro macro, boolean ignoreCooldown, boolean unlimited) {
 		if (isRunning(macro.id)) return StartResult.ALREADY_RUNNING;
 		if (macro.mutatesInventory() && inventoryBusy()) return StartResult.INVENTORY_BUSY;
 		if (!ignoreCooldown && !cooldowns.isReady(macro.id, macro.cooldownMs)) return StartResult.COOLDOWN;
 		MacroRun run;
 		try {
-			run = new MacroRun(macro, handlers, clock);
+			run = new MacroRun(macro, handlers, clock, unlimited);
 		} catch (RuntimeException e) {
 			lastStartError = e.getMessage();
 			return StartResult.INVALID;

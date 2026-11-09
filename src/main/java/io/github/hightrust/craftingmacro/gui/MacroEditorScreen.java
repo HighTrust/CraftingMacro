@@ -11,6 +11,7 @@ import io.github.hightrust.craftingmacro.macro.MacroStep;
 import io.github.hightrust.craftingmacro.macro.MacroType;
 import io.github.hightrust.craftingmacro.macro.MacroValidator;
 import io.github.hightrust.craftingmacro.macro.StepType;
+import io.github.hightrust.craftingmacro.macro.TriggerMode;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.KeyEvent;
@@ -55,7 +56,7 @@ public final class MacroEditorScreen extends BaseScreen {
 
 	@Override
 	protected int preferredHeight() {
-		return 260;
+		return 280;
 	}
 
 	@Override
@@ -74,6 +75,17 @@ public final class MacroEditorScreen extends BaseScreen {
 			capturing = false;
 			keyButton.setLabel(keyLabel());
 		}).tooltip("Remove key");
+		y += 22;
+		TriggerMode[] modes = TriggerMode.values();
+		int segW = (w - 2 * 2) / modes.length;
+		for (int i = 0; i < modes.length; i++) {
+			TriggerMode mode = modes[i];
+			button(x + i * (segW + 2), y, segW, mode.displayName(),
+					working.trigger == mode ? FlatButton.Style.PRIMARY : FlatButton.Style.NORMAL, () -> {
+						working.trigger = mode;
+						rebuildWidgets();
+					}).tooltip(mode.description());
+		}
 		y += 30;
 
 		stepsX = x;
@@ -176,7 +188,7 @@ public final class MacroEditorScreen extends BaseScreen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x();
 		double my = event.y();
-		if (event.button() == 0 && inside(mx, my, stepsX, stepsY, stepsW, stepsH)) {
+		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && inside(mx, my, stepsX, stepsY, stepsW, stepsH)) {
 			int idx = (int) ((my - stepsY) / ROW_H) + scroll;
 			if (idx >= 0 && idx < working.steps.size()) {
 				int right = stepsX + stepsW;

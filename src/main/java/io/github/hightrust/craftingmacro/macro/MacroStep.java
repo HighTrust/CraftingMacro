@@ -24,6 +24,8 @@ public final class MacroStep {
 	public int slot2 = 0;
 	public int button = 0;
 	public boolean shift = false;
+	/** CRAFT_PATTERN: 9 item ids (row-major 3x3, "" = empty). */
+	public java.util.List<String> pattern = new java.util.ArrayList<>();
 
 	public MacroStep() {
 	}
@@ -82,6 +84,24 @@ public final class MacroStep {
 		s.slot2 = slot2;
 		s.button = button;
 		s.shift = shift;
+		s.pattern = new java.util.ArrayList<>(pattern == null ? java.util.List.of() : pattern);
+		return s;
+	}
+
+	/** Pattern padded/trimmed to exactly 9 entries. */
+	public java.util.List<String> grid() {
+		java.util.List<String> g = new java.util.ArrayList<>();
+		for (int i = 0; i < 9; i++) {
+			String id = pattern != null && i < pattern.size() && pattern.get(i) != null ? pattern.get(i) : "";
+			g.add(id);
+		}
+		return g;
+	}
+
+	public static MacroStep pattern(java.util.List<String> grid, int crafts) {
+		MacroStep s = new MacroStep(StepType.CRAFT_PATTERN);
+		s.pattern = new java.util.ArrayList<>(grid);
+		s.amount = crafts;
 		return s;
 	}
 
@@ -94,6 +114,7 @@ public final class MacroStep {
 			case COMMAND -> "Run " + (text == null || text.isBlank() ? "<empty>" : text);
 			case OPEN_CRAFTING -> "Open crafting" + (text == null || text.isBlank() ? "" : " via " + text);
 			case CRAFT -> "Craft " + amount + "x " + prettyItem(text);
+			case CRAFT_PATTERN -> "Craft pattern " + amount + "x" + (text == null || text.isBlank() ? "" : " (" + text + ")");
 			case WAIT_TICKS -> "Wait " + amount + " ticks";
 			case WAIT_MS -> "Wait " + amount + " ms";
 			case CLICK_SLOT -> (shift ? "Shift-" : "") + (button == 1 ? "right" : "left") + "-click slot " + slot;
@@ -123,11 +144,11 @@ public final class MacroStep {
 	public boolean equals(Object o) {
 		if (!(o instanceof MacroStep s)) return false;
 		return type == s.type && amount == s.amount && slot == s.slot && slot2 == s.slot2
-				&& button == s.button && shift == s.shift && Objects.equals(text, s.text);
+				&& button == s.button && shift == s.shift && Objects.equals(text, s.text) && Objects.equals(grid(), s.grid());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(type, text, amount, slot, slot2, button, shift);
+		return Objects.hash(type, text, amount, slot, slot2, button, shift, grid());
 	}
 }

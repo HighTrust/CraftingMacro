@@ -7,6 +7,8 @@ import io.github.hightrust.craftingmacro.config.Settings;
 import io.github.hightrust.craftingmacro.gui.MacroListScreen;
 import io.github.hightrust.craftingmacro.macro.KeyCombo;
 import io.github.hightrust.craftingmacro.macro.Macro;
+import io.github.hightrust.craftingmacro.macro.TriggerMode;
+import io.github.hightrust.craftingmacro.exec.MacroRun;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -85,13 +87,37 @@ public final class KeybindManager {
 		Set<KeyCombo> firedThisTick = new HashSet<>();
 		long now = System.currentTimeMillis();
 
+		Set<String> nowHeldIds = new HashSet<>();
 		for (Macro macro : macros) {
 			if (!macro.enabled || macro.key == null || !macro.key.isBound()) continue;
-			if (!comboDown(macro.key, ctrl, shift, alt)) continue;
-			nowHeld.add(macro.key);
-			if (!allowed || !macro.availableOn(server)) continue;
-			boolean newPress = !held.contains(macro.key);
-			if (newPress) {
+			boolean down = comboDown(macro.key, ctrl, shift, alt);
+			boolean wasDown = heldIds.contains(macro.id);
+			boolean running = manager.executor().isRunning(macro.id);
+			if (down) {
+				nowHeld.add(macro.key);
+				nowHeldIds.add(macro.id);
+			}
+
+			// Hold mode: releasing the key stops the macro.
+			if (!down && wasDown && macro.trigger == TriggerMode.HOLD && running) {
+				manager.executor().cancel(macro.id, "Key released");
+			}
+
+			// Toggle mode: keep it going while toggled on; stop when finished / failed.
+			if (toggledOn.contains(macro.id) && !running) {
+				MacroRun.State last = manager.lastResult(macro.id);
+				boolean finished = macro.crafts() || last == MacroRun.State.FAILED || last == MacroRun.State.CANCELLED;
+				if (finished) {
+					toggledOn.remove(macro.id);
+				} else if (now >= nextHoldFire.getOrDefault(macro.id, 0L)) {
+					if (manager.trigger(macro, true, true)) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
+					else toggledOn.remove(macro.id);
+				}
+			}
+
+			if (!down || !allowed || !macro.availableOn(server)) continue;
+
+			if (!wasDown) {
 				if (firedThisTick.contains(macro.key)) {
 					// Two macros share this combo: run only the first and warn once.
 					if (warnedConflicts.add(macro.key)) {
@@ -100,19 +126,38 @@ public final class KeybindManager {
 					continue;
 				}
 				firedThisTick.add(macro.key);
-				if (manager.trigger(macro, false)) {
-					nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
-					if (settings.suppressVanillaConflicts) suppressVanilla(mc, macro.key.key);
+				boolean started = false;
+				switch (macro.trigger) {
+					case CLICK -> started = manager.trigger(macro, false, false);
+					case HOLD -> started = manager.trigger(macro, false, true);
+					case TOGGLE -> {
+						if (toggledOn.remove(macro.id)) {
+							manager.executor().cancel(macro.id, "Toggled off");
+						} else if (manager.trigger(macro, false, true)) {
+							toggledOn.add(macro.id);
+							started = true;
+						}
+					}
 				}
-			} else if (macro.holdToRepeat && now >= nextHoldFire.getOrDefault(macro.id, 0L)
-					&& !manager.executor().isRunning(macro.id)) {
-				if (manager.trigger(macro, true)) {
-					nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
-				}
+				if (started) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
+				if (settings.suppressVanillaConflicts) suppressVanilla(mc, macro.key.key);
+			} else if (macro.trigger == TriggerMode.HOLD && !running && !macro.crafts()
+					&& now >= nextHoldFire.getOrDefault(macro.id, 0L)) {
+				// Non-crafting macros repeat while held; crafting macros already craft everything in one run.
+				if (manager.trigger(macro, true, true)) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
 			}
 		}
 		held.clear();
 		held.addAll(nowHeld);
+		heldIds.clear();
+		heldIds.addAll(nowHeldIds);
+	}
+
+	private static final Set<String> heldIds = new HashSet<>();
+	private static final Set<String> toggledOn = new HashSet<>();
+
+	public static boolean isToggledOn(String macroId) {
+		return toggledOn.contains(macroId);
 	}
 
 	/** Macros fire in-game, or in container screens if enabled; never while any text input has focus. */
@@ -120,6 +165,9 @@ public final class KeybindManager {
 		Screen screen = mc.gui.screen();
 		if (screen == null) return true;
 		if (screen.isInputCaptured()) return false;
+		// Crafting table and inventory screens always allow macros (so L/M fill an open table).
+		if (screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen
+				|| screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen) return true;
 		return settings.allowInContainerScreens && screen instanceof AbstractContainerScreen<?>;
 	}
 
@@ -175,6 +223,8 @@ public final class KeybindManager {
 
 	public static void clearState() {
 		held.clear();
+		heldIds.clear();
+		toggledOn.clear();
 		nextHoldFire.clear();
 		warnedConflicts.clear();
 	}

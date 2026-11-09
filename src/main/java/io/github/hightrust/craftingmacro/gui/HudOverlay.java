@@ -34,6 +34,8 @@ public final class HudOverlay implements HudElement {
 			}
 		}
 
+		if (mc.gui.screen() == null) drawCraftFeed(g, font);
+
 		List<Notifier.Notice> notices = manager.notifier().visible();
 		int y = 4;
 		long now = System.currentTimeMillis();
@@ -58,6 +60,68 @@ public final class HudOverlay implements HudElement {
 			g.fill(x, y + 2, x + 2, y + 14, Theme.withAlpha(color, alpha));
 			g.text(font, text, x + 9, y + 4, Theme.withAlpha(Theme.TEXT, Math.max(0.05f, alpha)), false);
 			y += 19;
+		}
+	}
+
+	/**
+	 * Animated "+N item" cards, bottom-right: slide in with a slight overshoot, pop when the count
+	 * grows, a shimmer sweeps across new entries, then they fade out.
+	 */
+	public static void drawCraftFeed(GuiGraphicsExtractor g, Font font) {
+		MacroManager manager = MacroManager.get();
+		if (manager == null) return;
+		List<io.github.hightrust.craftingmacro.notify.CraftLog.FeedEntry> feed = manager.craftLog().feed();
+		if (feed.isEmpty()) return;
+		long now = System.currentTimeMillis();
+		int y = g.guiHeight() - 60;
+		for (int i = feed.size() - 1; i >= 0; i--) {
+			var e = feed.get(i);
+			long age = now - e.createdMs;
+			long sinceBump = now - e.bumpedMs;
+			float in = Math.min(1f, age / 260f);
+			// ease-out-back for a little overshoot
+			float c1 = 1.70158f, c3 = c1 + 1f;
+			float slide = 1f + c3 * (float) Math.pow(in - 1, 3) + c1 * (float) Math.pow(in - 1, 2);
+			float out = Math.min(1f, (io.github.hightrust.craftingmacro.notify.CraftLog.FEED_LIFETIME_MS - sinceBump) / 400f);
+			float alpha = Math.max(0f, Math.min(in * 1.5f, out));
+			if (alpha <= 0.02f) continue;
+
+			net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.tryParse(e.itemId);
+			net.minecraft.world.item.ItemStack stack = id != null && net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id)
+					? new net.minecraft.world.item.ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(id))
+					: net.minecraft.world.item.ItemStack.EMPTY;
+			String count = "+" + e.count;
+			String name = stack.isEmpty() ? e.itemId : stack.getHoverName().getString();
+			int w = 30 + font.width(count) + 6 + font.width(name) + 10;
+			int h = 22;
+			int x = g.guiWidth() - w - 6 + Math.round((1f - slide) * (w + 12));
+
+			Theme.rounded(g, x, y, w, h, Theme.withAlpha(0xE6161A22, alpha));
+			g.fill(x, y + 3, x + 2, y + h - 3, Theme.withAlpha(Theme.SUCCESS, alpha));
+			// shimmer sweep across fresh entries
+			if (age < 700) {
+				int sx = x + (int) ((w + 20) * (age / 700f)) - 20;
+				for (int k = 0; k < 10; k++) {
+					int cx = sx + k;
+					if (cx > x + 2 && cx < x + w - 2) {
+						float strength = (1f - Math.abs(k - 5) / 5f) * 0.25f * alpha;
+						g.fill(cx, y + 2, cx + 1, y + h - 2, Theme.withAlpha(0xFFFFFFFF, strength));
+					}
+				}
+			}
+			if (!stack.isEmpty() && alpha > 0.5f) g.item(stack, x + 7, y + 3);
+
+			// pop the count when it grows
+			float pop = sinceBump < 250 ? 1f + 0.35f * (float) Math.sin(sinceBump / 250f * Math.PI) : 1f;
+			int countColor = Theme.lerpColor(0xFF7CF29A, Theme.SUCCESS, Math.min(1f, sinceBump / 600f));
+			int tx = x + 28;
+			g.pose().pushMatrix();
+			g.pose().translate(tx, y + 7);
+			g.pose().scale(pop, pop);
+			g.text(font, count, 0, 0, Theme.withAlpha(countColor, alpha), true);
+			g.pose().popMatrix();
+			g.text(font, name, tx + font.width(count) + 6, y + 7, Theme.withAlpha(Theme.TEXT, alpha), false);
+			y -= h + 4;
 		}
 	}
 }

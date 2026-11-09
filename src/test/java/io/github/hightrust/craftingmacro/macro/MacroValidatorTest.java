@@ -96,6 +96,37 @@ class MacroValidatorTest {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
+	void legacyHoldFlagMigratesToHoldMode() {
+		Macro m = valid();
+		m.holdToRepeat = true;
+		MacroValidator.sanitize(m);
+		assertEquals(TriggerMode.HOLD, m.trigger);
+		assertFalse(m.holdToRepeat);
+		Macro t = valid();
+		t.trigger = null;
+		MacroValidator.sanitize(t);
+		assertEquals(TriggerMode.CLICK, t.trigger);
+	}
+
+	@Test
+	void patternStepValidation() {
+		MacroStep empty = MacroStep.pattern(List.of(), 1);
+		assertNotNull(MacroValidator.validateStep(empty, 0));
+		MacroStep stick = MacroStep.pattern(List.of("", "minecraft:oak_planks", "", "", "minecraft:oak_planks"), 4);
+		assertNull(MacroValidator.validateStep(stick, 0));
+		assertEquals(9, stick.grid().size());
+		assertEquals("minecraft:oak_planks", stick.grid().get(4));
+		assertEquals("", stick.grid().get(8));
+		MacroStep bad = MacroStep.pattern(List.of("not an id"), 1);
+		assertNotNull(MacroValidator.validateStep(bad, 0));
+		MacroValidator.sanitizeStep(bad);
+		assertEquals("", bad.grid().get(0), "invalid ids are dropped on sanitize");
+		assertTrue(stick.copy().equals(stick));
+		assertTrue(MacroStep.of(StepType.CRAFT_PATTERN).type.mutatesInventory());
+	}
+
+	@Test
 	void copyIsDeep() {
 		Macro m = valid();
 		Macro c = m.copy(true);

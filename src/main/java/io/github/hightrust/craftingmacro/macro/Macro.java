@@ -23,9 +23,12 @@ public final class Macro {
 	public int startDelayMs = 0;
 	/** How many times the whole step list runs per activation (1 = once). */
 	public int repeatCount = 1;
-	/** Keep re-running while the key is held. */
+	/** How the key triggers the macro: click (once), hold, or toggle. */
+	public TriggerMode trigger = TriggerMode.CLICK;
+	/** @deprecated legacy flag from 1.0.0; migrated to {@link #trigger} = HOLD on load. */
+	@Deprecated
 	public boolean holdToRepeat = false;
-	/** Pause between runs while the key is held. */
+	/** Pause between repeated runs in hold/toggle mode (for non-crafting macros). */
 	public int holdIntervalMs = 500;
 	public boolean notify = true;
 	/** Close a crafting screen that this macro opened once it finishes. */
@@ -67,6 +70,7 @@ public final class Macro {
 		m.cooldownMs = cooldownMs;
 		m.startDelayMs = startDelayMs;
 		m.repeatCount = repeatCount;
+		m.trigger = trigger;
 		m.holdToRepeat = holdToRepeat;
 		m.holdIntervalMs = holdIntervalMs;
 		m.notify = notify;
@@ -74,6 +78,12 @@ public final class Macro {
 		m.stopOnError = stopOnError;
 		m.servers = new ArrayList<>(servers);
 		return m;
+	}
+
+	/** True if the macro contains a crafting step. */
+	public boolean crafts() {
+		for (MacroStep s : steps) if (s.type == StepType.CRAFT || s.type == StepType.CRAFT_PATTERN) return true;
+		return false;
 	}
 
 	/** True if any step needs the exclusive inventory lock. */

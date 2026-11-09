@@ -46,7 +46,7 @@ class ConfigSerializationTest {
 		m.steps.add(click);
 		m.cooldownMs = 1234;
 		m.repeatCount = 3;
-		m.holdToRepeat = true;
+		m.trigger = io.github.hightrust.craftingmacro.macro.TriggerMode.TOGGLE;
 		m.servers.add("play.example.net");
 		p.macros.add(m);
 		c.profiles.add(p);
@@ -60,7 +60,7 @@ class ConfigSerializationTest {
 		assertEquals(m.steps, lm.steps);
 		assertEquals(1234, lm.cooldownMs);
 		assertEquals(3, lm.repeatCount);
-		assertTrue(lm.holdToRepeat);
+		assertEquals(io.github.hightrust.craftingmacro.macro.TriggerMode.TOGGLE, lm.trigger);
 		assertEquals("play.example.net", lm.servers.get(0));
 		assertEquals("PvP", loaded.serverProfiles.get("play.example.net"));
 		assertEquals("/workbench", loaded.settings.craftOpenCommand);

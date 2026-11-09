@@ -5,6 +5,10 @@ A **client-side Fabric mod for Minecraft Java 26.3** that lets you bind keys to 
 - **Command macros:** run `/craft`, `/home`, `/spawn` and other commands, with delays between them.
 - **Auto-crafting:** pick a recipe and a quantity. The mod checks your ingredients and inventory space, opens a crafting grid, crafts, collects the results and closes the screen.
 - **Sequences:** chain commands, crafting, waits, slot clicks, item moves, notifications and repeats.
+- **Click / Hold / Toggle:** Click runs once (e.g. 1 snow block). Hold crafts as much as possible until you let go. Toggle crafts as much as possible until you press again or run out.
+- **Custom patterns:** design a 3×3 layout in a fake crafting table, and the mod places the items for you with normal clicks. Works with custom server recipes.
+- **Works inside an open crafting table:** press your macro key while the table is open and it fills the grid and crafts. No `/craft` needed.
+- **Animated "+N crafted" feed and a Stats screen** showing totals and the resources used.
 - A dark in-game manager (**Right Shift**) with search, enable switches, keybind conflict warnings, profiles, import/export and notifications.
 
 > Client-side only. No server plugin is needed, and the mod only does what you could do by hand. It uses the same recipe-book and click packets as vanilla, so every action is checked by the server. It contains no dupes, no anticheat bypasses and no permission bypasses.
@@ -69,14 +73,14 @@ src/main/java/io/github/hightrust/craftingmacro/
 ├── input/      key polling and vanilla key mappings
 ├── gui/        screens and widgets
 └── notify/     HUD notifications
-src/test/java/  64 JUnit tests for the pure logic
+src/test/java/  66 JUnit tests for the pure logic
 ```
 
 To add a new step type, add an entry to `StepType` and a `StepHandler` in `StepHandlers`. The executor, editor and config pick it up automatically.
 
 ## Testing status
 
-- **Automated:** 64 JUnit tests pass. They cover config serialization, validation, keybind conflicts, sequence ordering, cooldowns, ingredient math, inventory capacity, cancellation and timeouts, migration, and import safety.
+- **Automated:** 66 JUnit tests pass. They cover config serialization, validation, keybind conflicts, sequence ordering, cooldowns, ingredient math, inventory capacity, cancellation and timeouts, migration, and import safety.
 - **Live:** the mod compiles against 26.3, loads in the development client and reaches the title screen without errors.
 - **Not yet verified live:** in-world crafting in singleplayer, and anything on a multiplayer server. Please report results in Issues.
 

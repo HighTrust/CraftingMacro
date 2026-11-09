@@ -34,12 +34,18 @@ public final class MacroManager {
 	private final MacroExecutor executor;
 	private final Notifier notifier;
 	private long dirtySince = -1;
+	private final io.github.hightrust.craftingmacro.notify.CraftLog craftLog;
+
+	public io.github.hightrust.craftingmacro.notify.CraftLog craftLog() {
+		return craftLog;
+	}
 
 	private MacroManager(Path configDir) {
 		this.store = new ConfigStore(configDir);
 		ConfigStore.LoadResult loaded = store.load();
 		this.config = loaded.config();
 		this.notifier = new Notifier(this::settings);
+		this.craftLog = new io.github.hightrust.craftingmacro.notify.CraftLog(configDir);
 		this.executor = new MacroExecutor(StepHandlers.create(this::settings), System::currentTimeMillis);
 		this.executor.setEndHook(this::onRunEnd);
 		this.executor.setListener(new MacroExecutor.Listener() {
@@ -102,6 +108,7 @@ public final class MacroManager {
 
 	public void saveNow() {
 		dirtySince = -1;
+		if (craftLog != null) craftLog.save();
 		try {
 			store.save(config);
 		} catch (IOException e) {
@@ -161,6 +168,22 @@ public final class MacroManager {
 
 	/** Starts a macro (a snapshot copy, so editing it mid-run is safe). Returns true if it started. */
 	public boolean trigger(Macro macro, boolean fromHold) {
+		return trigger(macro, fromHold, false);
+	}
+
+	/** State of each macro's most recent finished run (used by toggle mode to stop when done). */
+	private final java.util.Map<String, MacroRun.State> lastResult = new java.util.HashMap<>();
+
+	public MacroRun.State lastResult(String macroId) {
+		return lastResult.get(macroId);
+	}
+
+	/**
+	 * @param fromHold  quiet automatic re-trigger (no cooldown / "already running" messages)
+	 * @param unlimited crafting steps craft as much as possible
+	 */
+	public boolean trigger(Macro macro, boolean fromHold, boolean unlimited) {
+		lastResult.remove(macro.id);
 		if (!ScreenController.inWorld()) return false;
 		if (!macro.enabled) return false;
 		if (!macro.availableOn(currentServer())) {
@@ -168,7 +191,7 @@ public final class MacroManager {
 			return false;
 		}
 		Macro snapshot = macro.copy(false);
-		MacroExecutor.StartResult result = executor.start(snapshot, fromHold);
+		MacroExecutor.StartResult result = executor.start(snapshot, fromHold, unlimited);
 		switch (result) {
 			case STARTED -> {
 				return true;
@@ -206,6 +229,7 @@ public final class MacroManager {
 
 	private void reportFinished(MacroRun run) {
 		Macro m = run.macro();
+		lastResult.put(m.id, run.state());
 		switch (run.state()) {
 			case SUCCEEDED -> {
 				String msg = run.message() == null || run.message().isEmpty() ? m.name + " done" : run.message();

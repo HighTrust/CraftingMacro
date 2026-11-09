@@ -37,6 +37,13 @@ public final class CraftingMacroClient implements ClientModInitializer {
 		});
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> MacroManager.get().saveNow());
 
+		// Show the "+N crafted" feed on top of crafting / inventory screens too.
+		net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
+			if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) {
+				net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register(
+						(s, g, mx, my, delta) -> HudOverlay.drawCraftFeed(g, mc.font));
+			}
+		});
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(MOD_ID, "status"), new HudOverlay());
 		MacroManager.LOGGER.info("Crafting Macro loaded");
 	}

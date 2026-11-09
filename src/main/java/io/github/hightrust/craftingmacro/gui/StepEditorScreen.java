@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /** Edits a single step. Fields shown depend on the step type. */
@@ -76,6 +77,12 @@ public final class StepEditorScreen extends BaseScreen {
 				y += 24;
 				amountField(fx, y, fw, "How many result items to craft");
 			}
+			case CRAFT_PATTERN -> button(fx + 62, y, fw - 62, "Design pattern...", FlatButton.Style.PRIMARY,
+					() -> minecraft.gui.setScreen(new PatternDesignerScreen(this, step, r -> {
+						step.pattern = r.pattern;
+						step.amount = r.amount;
+						step.text = r.text;
+					}))).tooltip("Open the crafting grid designer");
 			case WAIT_TICKS -> amountField(fx, y, fw, "Ticks to wait (20 ticks = 1 second)");
 			case WAIT_MS -> amountField(fx, y, fw, "Milliseconds to wait");
 			case CLICK_SLOT -> {
@@ -132,7 +139,7 @@ public final class StepEditorScreen extends BaseScreen {
 		switch (next) {
 			case WAIT_TICKS -> step.amount = step.amount <= 0 ? 20 : step.amount;
 			case WAIT_MS -> step.amount = step.amount <= 0 ? 500 : step.amount;
-			case CRAFT, REPEAT -> step.amount = Math.max(1, step.amount);
+			case CRAFT, REPEAT, CRAFT_PATTERN -> step.amount = Math.max(1, step.amount);
 			default -> {
 			}
 		}
@@ -165,6 +172,20 @@ public final class StepEditorScreen extends BaseScreen {
 					g.item(new ItemStack(BuiltInRegistries.ITEM.getValue(id)), fieldX(), y + 1);
 				}
 				label(g, "Quantity", x, y + 28);
+			}
+			case CRAFT_PATTERN -> {
+				label(g, "Pattern", x, y + 5);
+				List<String> grid = step.grid();
+				for (int i = 0; i < 9; i++) {
+					int cx = fieldX() + (i % 3) * 19;
+					int cy = y - 8 + (i / 3) * 19;
+					Theme.rounded(g, cx, cy, 18, 18, Theme.SURFACE);
+					Identifier id = Identifier.tryParse(grid.get(i));
+					if (!grid.get(i).isEmpty() && id != null && BuiltInRegistries.ITEM.containsKey(id)) {
+						g.item(new ItemStack(BuiltInRegistries.ITEM.getValue(id)), cx + 1, cy + 1);
+					}
+				}
+				g.text(font, step.amount + "x", fieldX() + 62, y + 26, Theme.TEXT_DIM, false);
 			}
 			case WAIT_TICKS -> label(g, "Ticks", x, y + 4);
 			case WAIT_MS -> label(g, "Milliseconds", x, y + 4);

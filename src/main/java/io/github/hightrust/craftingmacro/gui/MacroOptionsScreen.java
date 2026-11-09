@@ -44,8 +44,6 @@ public final class MacroOptionsScreen extends BaseScreen {
 		y += 24;
 		toggle(x, y, w, "Enabled", m.enabled, null, v -> m.enabled = v);
 		y += 17;
-		toggle(x, y, w, "Repeat while key is held", m.holdToRepeat, null, v -> m.holdToRepeat = v);
-		y += 17;
 		toggle(x, y, w, "Show notifications", m.notify, "Errors are always shown", v -> m.notify = v);
 		y += 17;
 		toggle(x, y, w, "Close crafting screen when done", m.autoClose, null, v -> m.autoClose = v);

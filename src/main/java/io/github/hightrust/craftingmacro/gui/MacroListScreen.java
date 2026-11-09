@@ -65,6 +65,8 @@ public final class MacroListScreen extends BaseScreen {
 		int profW = Math.min(100, font.width(profile) + 14);
 		button(panelX + panelW - 8 - 52, panelY + 3, 52, "Settings", FlatButton.Style.GHOST,
 				() -> minecraft.gui.setScreen(new SettingsScreen(this))).tooltip("Settings");
+		button(panelX + panelW - 8 - 52 - 4 - profW - 4 - 40, panelY + 3, 40, "Stats", FlatButton.Style.GHOST,
+				() -> minecraft.gui.setScreen(new StatsScreen(this))).tooltip("What you've crafted and the resources used");
 		button(panelX + panelW - 8 - 52 - 4 - profW, panelY + 3, profW, profile, FlatButton.Style.GHOST,
 				() -> minecraft.gui.setScreen(new ProfileScreen(this))).tooltip("Profile (click to manage, import, export)");
 
@@ -108,7 +110,7 @@ public final class MacroListScreen extends BaseScreen {
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		double mx = event.x();
 		double my = event.y();
-		if (event.button() == 0 && inside(mx, my, listX, listY, listW, listH)) {
+		if (event.button() == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && inside(mx, my, listX, listY, listW, listH)) {
 			int idx = (int) ((my - listY + scroll) / ROW_H);
 			if (idx >= 0 && idx < filtered.size()) {
 				Macro m = filtered.get(idx);
@@ -162,7 +164,8 @@ public final class MacroListScreen extends BaseScreen {
 			if (running) Theme.rounded(g, listX + 4, y + 9, 4, 4, Theme.ACCENT);
 
 			// key badge
-			String key = KeybindManager.label(m.key);
+			String key = KeybindManager.label(m.key)
+					+ (m.trigger == io.github.hightrust.craftingmacro.macro.TriggerMode.CLICK ? "" : " · " + m.trigger.displayName());
 			boolean conflict = KeybindConflicts.hasConflict(m, all);
 			int badgeW = font.width(key) + 8;
 			int badgeX = listX + listW - SWITCH_ZONE - badgeW;

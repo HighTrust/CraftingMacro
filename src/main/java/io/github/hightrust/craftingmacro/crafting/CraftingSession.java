@@ -49,10 +49,23 @@ public final class CraftingSession {
 	private String failure;
 	private String finalWarning = "";
 
+	/** Hold/toggle mode: keep crafting until ingredients or inventory space run out. */
+	private final boolean unlimited;
+
 	public CraftingSession(String targetId, int wantedItems, Settings settings) {
+		this(targetId, wantedItems, settings, false);
+	}
+
+	private CraftingSession(String targetId, int wantedItems, Settings settings, boolean unlimited) {
 		this.targetId = targetId;
 		this.wantedItems = wantedItems;
 		this.settings = settings;
+		this.unlimited = unlimited;
+	}
+
+	/** Crafts as many as the inventory allows. */
+	public static CraftingSession asMuchAsPossible(String targetId, Settings settings) {
+		return new CraftingSession(targetId, io.github.hightrust.craftingmacro.macro.MacroValidator.MAX_CRAFT_QUANTITY, settings, true);
 	}
 
 	public boolean openedScreen() {
@@ -109,6 +122,7 @@ public final class CraftingSession {
 			return StepResult.failed("Inventory full: no room for " + recipe.result().getHoverName().getString());
 		}
 		startCount = InventoryAnalyzer.count(player, recipe.resultId());
+		startCounts = InventoryAnalyzer.counts(player, currentGrid);
 
 		if (current instanceof CraftingMenu) {
 			menuId = current.containerId;
@@ -248,6 +262,7 @@ public final class CraftingSession {
 		int now = InventoryAnalyzer.count(player, recipe.resultId());
 		int gained = Math.max(0, now - startCount);
 		int craftedThisBatch = Math.max(0, gained - itemsCrafted) / recipe.resultCount();
+		if (gained > itemsCrafted) CraftReport.batch(recipe.resultId(), gained - itemsCrafted);
 		itemsCrafted = gained;
 		craftsDone += craftedThisBatch;
 		if (!ScreenController.gridEmpty(menu) && !ScreenController.resultStack(menu).isEmpty()) {
@@ -307,7 +322,12 @@ public final class CraftingSession {
 		return keepScreenOpen;
 	}
 
+	private Map<String, Integer> startCounts = Map.of();
+
 	private StepResult finish() {
+		if (recipe != null && itemsCrafted > 0) {
+			CraftReport.session(recipe.resultId(), itemsCrafted, startCounts, recipe.slots());
+		}
 		if (failure != null) return StepResult.failed(failure);
 		String name = recipe.result().getHoverName().getString();
 		if (craftsDone >= craftsWanted) {
@@ -315,6 +335,7 @@ public final class CraftingSession {
 		}
 		String reason = finalWarning.isEmpty() ? "" : " (" + finalWarning + ")";
 		if (itemsCrafted == 0) return StepResult.failed("Crafted nothing" + reason);
+		if (unlimited) return StepResult.done("Crafted " + itemsCrafted + "x " + name + reason);
 		return StepResult.done("Crafted " + itemsCrafted + "/" + (craftsWanted * recipe.resultCount()) + "x " + name + reason);
 	}
 
