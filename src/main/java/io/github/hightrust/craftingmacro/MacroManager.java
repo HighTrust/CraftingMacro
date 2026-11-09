@@ -221,6 +221,19 @@ public final class MacroManager {
 		return false;
 	}
 
+	/**
+	 * Background mode: mining keeps working while tabbed out. Also turns off vanilla's
+	 * "pause on lost focus" so the game keeps running (and restores it when switched off).
+	 */
+	public void setBackgroundMode(boolean on) {
+		settings().backgroundMining = on;
+		Minecraft mc = Minecraft.getInstance();
+		mc.options.pauseOnLostFocus = !on;
+		mc.options.save();
+		markDirty();
+		notifier.banner("Background mode", on ? "Keeps running when you tab out" : "Game pauses when you tab out", on);
+	}
+
 	public void stopAll(String reason) {
 		int n = executor.stopAll(reason);
 		io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();

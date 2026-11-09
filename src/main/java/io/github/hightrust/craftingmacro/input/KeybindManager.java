@@ -95,6 +95,14 @@ public final class KeybindManager {
 		boolean shift = InputConstants.isKeyDown(InputConstants.KEY_LSHIFT) || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 		boolean alt = InputConstants.isKeyDown(InputConstants.KEY_LALT) || InputConstants.isKeyDown(InputConstants.KEY_RALT);
 
+		// Ctrl+P: toggle background mode (keep running when tabbed out).
+		boolean ctrlP = allowed && ctrl && !shift && !alt && InputConstants.isKeyDown(InputConstants.KEY_P);
+		if (ctrlP && !ctrlPWasDown) {
+			manager.setBackgroundMode(!settings.backgroundMining);
+			suppressVanilla(mc, "key.keyboard.p");
+		}
+		ctrlPWasDown = ctrlP;
+
 		List<Macro> macros = manager.macros();
 		String server = MacroManager.currentServer();
 		Set<KeyCombo> nowHeld = new HashSet<>();
@@ -135,9 +143,11 @@ public final class KeybindManager {
 					case TOGGLE -> {
 						if (toggledOn.remove(macro.id)) {
 							manager.executor().cancel(macro.id, "Toggled off");
+							manager.notifier().banner(macro.name, "Stopped", false);
 						} else if (manager.trigger(macro, false, true)) {
 							toggledOn.add(macro.id);
 							started = true;
+							manager.notifier().banner(macro.name, "Running - press " + label(macro.key) + " to stop", true);
 						}
 					}
 				}
@@ -164,6 +174,7 @@ public final class KeybindManager {
 			boolean finished = !macro.enabled || macro.crafts() || last == MacroRun.State.FAILED || last == MacroRun.State.CANCELLED;
 			if (finished) {
 				toggledOn.remove(macro.id);
+				manager.notifier().banner(macro.name, last == MacroRun.State.FAILED ? "Stopped (error)" : "Finished", false);
 			} else if (now >= nextHoldFire.getOrDefault(macro.id, 0L)) {
 				if (manager.trigger(macro, true, true)) nextHoldFire.put(macro.id, now + Math.max(macro.holdIntervalMs, 50));
 				else toggledOn.remove(macro.id);
@@ -173,6 +184,7 @@ public final class KeybindManager {
 		toggledOn.removeIf(id -> manager.macros().stream().noneMatch(m -> m.id.equals(id)));
 	}
 
+	private static boolean ctrlPWasDown;
 	private static final Set<String> heldIds = new HashSet<>();
 	private static final Set<String> toggledOn = new HashSet<>();
 

@@ -34,7 +34,10 @@ public final class HudOverlay implements HudElement {
 			}
 		}
 
-		if (mc.gui.screen() == null) drawCraftFeed(g, font);
+		if (mc.gui.screen() == null) {
+			drawCraftFeed(g, font);
+			drawBanner(g, font);
+		}
 
 		List<Notifier.Notice> notices = manager.notifier().visible();
 		int y = 4;
@@ -61,6 +64,50 @@ public final class HudOverlay implements HudElement {
 			g.text(font, text, x + 9, y + 4, Theme.withAlpha(Theme.TEXT, Math.max(0.05f, alpha)), false);
 			y += 19;
 		}
+	}
+
+	/**
+	 * Toggle banner, top centre: drops in with an overshoot, the switch slides to its new state,
+	 * a coloured glow pulses (violet/pink for ON, dim red for OFF), then it rises and fades out.
+	 */
+	public static void drawBanner(GuiGraphicsExtractor g, Font font) {
+		MacroManager manager = MacroManager.get();
+		if (manager == null) return;
+		Notifier.Banner b = manager.notifier().currentBanner();
+		if (b == null) return;
+		long age = System.currentTimeMillis() - b.createdMs();
+		float in = Math.min(1f, age / 280f);
+		float c1 = 1.70158f, c3 = c1 + 1f;
+		float drop = 1f + c3 * (float) Math.pow(in - 1, 3) + c1 * (float) Math.pow(in - 1, 2);
+		float out = Math.min(1f, (Notifier.BANNER_MS - age) / 350f);
+		float alpha = Math.max(0f, Math.min(in * 1.4f, out));
+		if (alpha <= 0.02f) return;
+
+		String state = b.on() ? "ON" : "OFF";
+		int w = Math.max(150, Math.max(font.width(b.title()), font.width(b.subtitle())) + 70);
+		int h = 34;
+		int x = (g.guiWidth() - w) / 2;
+		int y = Math.round(-h + (h + 14) * drop) - Math.round((1f - out) * 10);
+
+		int glowColor = b.on() ? Theme.ACCENT2 : Theme.DANGER;
+		float pulse = (float) (0.6 + 0.4 * Math.sin(age / 140.0));
+		Theme.glow(g, x, y, w, h, glowColor, alpha * (b.on() ? 1.4f : 0.8f) * pulse);
+		Theme.rounded(g, x, y, w, h, Theme.withAlpha(0xF00C0912, alpha));
+		g.fillGradient(x + 2, y + 2, x + w - 2, y + h / 2, Theme.withAlpha(b.on() ? 0x33B04DFF : 0x22FF5470, alpha), 0x00000000);
+		if (b.on()) Theme.accentBar(g, x + 6, y + 6, h - 12, alpha);
+		else g.fill(x + 6, y + 6, x + 8, y + h - 6, Theme.withAlpha(Theme.DANGER, alpha));
+
+		g.text(font, b.title(), x + 14, y + 7, Theme.withAlpha(Theme.TEXT, alpha), false);
+		g.text(font, b.subtitle(), x + 14, y + 19, Theme.withAlpha(Theme.TEXT_DIM, alpha), false);
+
+		// animated switch sliding to the new state, with the state label
+		float t = Math.min(1f, Math.max(0f, (age - 120) / 220f));
+		float knob = b.on() ? t : 1f - t;
+		int sx = x + w - 34;
+		int sy = y + 8;
+		if (alpha > 0.4f) Theme.toggle(g, sx, sy, knob, 0f);
+		int stateColor = b.on() ? Theme.lerpColor(0xFFFFFFFF, Theme.ACCENT2, Math.min(1f, age / 500f)) : Theme.DANGER;
+		g.text(font, state, sx + 11 - font.width(state) / 2, sy + 15, Theme.withAlpha(stateColor, alpha), false);
 	}
 
 	/**

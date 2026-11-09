@@ -61,9 +61,9 @@ public final class MineSession {
 		if (!focused && !(background && mc.gui.screen() == null)) {
 			stopKeys();
 			if (mc.gui.screen() != null && background) {
-				return StepResult.failed("Game paused when you tabbed out - press F3+P in-game to turn off pause on lost focus");
+				return StepResult.failed("A menu opened (pause screen?) - mining stopped");
 			}
-			return StepResult.failed("Mining needs the game focused (or turn on 'Mine in background' in Settings)");
+			return StepResult.failed("Mining needs the game focused - press Ctrl+P for background mode");
 		}
 		direct = !focused;
 		tick++;

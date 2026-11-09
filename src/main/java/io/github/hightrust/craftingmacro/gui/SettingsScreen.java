@@ -57,8 +57,8 @@ public final class SettingsScreen extends BaseScreen {
 				v -> { s.preferInventoryGrid = v; dirty.run(); });
 		y += 18;
 		toggle(x, y, w, "Mine in background (tabbed out)", s.backgroundMining,
-				"Mining macros keep working while the game window isn't focused. Also press F3+P in-game so the game doesn't pause when you tab out.",
-				v -> { s.backgroundMining = v; dirty.run(); });
+				"Macros keep running while the game window isn't focused, and the game no longer pauses when you tab out. Shortcut: Ctrl+P in-game.",
+				v -> MacroManager.get().setBackgroundMode(v));
 		y += 24;
 		EditBox cmd = textField(x + 150, y, w - 150, s.craftOpenCommand, 128, "(disabled)",
 				"Command that opens a 3x3 crafting screen on your server, e.g. /craft or /workbench. Blank disables it.");

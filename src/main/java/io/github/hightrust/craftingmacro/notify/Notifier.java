@@ -82,6 +82,27 @@ public final class Notifier {
 		}
 	}
 
+	/** Big animated ON/OFF banner (top centre) for toggles. */
+	public record Banner(String title, String subtitle, boolean on, long createdMs) {
+	}
+
+	public static final long BANNER_MS = 1800;
+	private volatile Banner banner;
+
+	public void banner(String title, String subtitle, boolean on) {
+		if (!settings.get().notificationsEnabled) return;
+		banner = new Banner(title, subtitle, on, System.currentTimeMillis());
+	}
+
+	public Banner currentBanner() {
+		Banner b = banner;
+		if (b != null && System.currentTimeMillis() - b.createdMs() > BANNER_MS) {
+			banner = null;
+			return null;
+		}
+		return b;
+	}
+
 	/** Most recent status line, shown in the macro manager screen. */
 	public String lastStatus() {
 		return lastStatus;
