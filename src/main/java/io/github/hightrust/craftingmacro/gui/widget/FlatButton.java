@@ -81,7 +81,7 @@ public class FlatButton extends AbstractWidget {
 			Theme.hGradient(g, getX() + 3, getY() + getHeight() - 1, getX() + getWidth() - 3, getY() + getHeight(),
 					Theme.withAlpha(Theme.ACCENT, hover), Theme.withAlpha(Theme.ACCENT2, hover));
 		}
-		Font font = Minecraft.getInstance().font;
+		Font font = io.github.hightrust.craftingmacro.gui.Fonts.ui();
 		String label = getMessage().getString();
 		int maxW = getWidth() - 6;
 		if (font.width(label) > maxW) label = font.plainSubstrByWidth(label, maxW - font.width("...")) + "...";

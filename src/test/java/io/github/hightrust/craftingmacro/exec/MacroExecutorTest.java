@@ -239,4 +239,33 @@ class MacroExecutorTest {
 		assertEquals(MacroExecutor.StartResult.INVALID, executor.start(m));
 		assertTrue(executor.isIdle());
 	}
+
+	@Test
+	void interruptPausesThenResumesTheSameStep() {
+		Macro m = new Macro("Rule", MacroType.SEQUENCE, KeyCombo.unbound());
+		m.withStep(MacroStep.command("a")).withStep(MacroStep.craft("x", 10)).withStep(MacroStep.command("b"));
+		MacroRun run = new MacroRun(m, handlers, clock::get);
+		run.tick();
+		assertEquals(List.of("a", "craft-start"), log);
+		run.interrupt(1000, false, "test");
+		assertTrue(run.paused());
+		assertEquals("craft-cancel", log.get(log.size() - 1));
+		run.tick();
+		assertEquals(3, log.size(), "nothing runs while paused");
+		clock.addAndGet(1000);
+		run.tick();
+		assertFalse(run.paused());
+		assertEquals(List.of("a", "craft-start", "craft-cancel", "craft-start"), log);
+	}
+
+	@Test
+	void interruptWithRestartGoesBackToStepOne() {
+		Macro m = new Macro("Rule", MacroType.SEQUENCE, KeyCombo.unbound());
+		m.withStep(MacroStep.command("a")).withStep(MacroStep.craft("x", 10));
+		MacroRun run = new MacroRun(m, handlers, clock::get);
+		run.tick();
+		run.interrupt(0, true, "test");
+		run.tick();
+		assertEquals(List.of("a", "craft-start", "craft-cancel", "a", "craft-start"), log);
+	}
 }

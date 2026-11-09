@@ -10,6 +10,7 @@ public final class MacroValidator {
 	public static final int MAX_DESCRIPTION = 256;
 	public static final int MAX_TEXT = 256;
 	public static final int MAX_STEPS = 64;
+	public static final int MAX_RULES = 5;
 	public static final int MAX_COOLDOWN_MS = 600_000;
 	public static final int MAX_DELAY_MS = 60_000;
 	public static final int MAX_REPEAT = 100;
@@ -127,6 +128,16 @@ public final class MacroValidator {
 		m.repeatCount = clamp(m.repeatCount, 1, MAX_REPEAT);
 		m.holdIntervalMs = clamp(m.holdIntervalMs, 50, MAX_DELAY_MS);
 		if (m.servers == null) m.servers = new ArrayList<>();
+		if (m.rules == null) m.rules = new ArrayList<>();
+		m.rules.removeIf(r -> r == null || r.condition == null);
+		while (m.rules.size() > MAX_RULES) m.rules.remove(m.rules.size() - 1);
+		for (MacroRule r : m.rules) {
+			if (r.then == null) r.then = MacroRule.Then.RESUME;
+			if (r.command == null) r.command = "";
+			if (r.command.length() > MAX_TEXT) r.command = r.command.substring(0, MAX_TEXT);
+			r.amount = Math.max(0, Math.min(r.amount, 1_000_000));
+			r.pauseMs = Math.max(0, Math.min(r.pauseMs, 600_000));
+		}
 		m.servers.removeIf(s -> s == null || s.isBlank());
 		while (m.servers.size() > MAX_SERVERS) m.servers.remove(m.servers.size() - 1);
 		m.servers.replaceAll(s -> clip(s.strip(), 128));

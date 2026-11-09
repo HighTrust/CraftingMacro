@@ -36,6 +36,8 @@ public final class Macro {
 	public boolean stopOnError = true;
 	/** Server addresses this macro is limited to. Empty = everywhere. "singleplayer" matches local worlds. */
 	public List<String> servers = new ArrayList<>();
+	/** Automation rules checked while the macro runs (e.g. run /fix when durability is low). */
+	public List<MacroRule> rules = new ArrayList<>();
 
 	public Macro() {
 	}
@@ -77,6 +79,8 @@ public final class Macro {
 		m.autoClose = autoClose;
 		m.stopOnError = stopOnError;
 		m.servers = new ArrayList<>(servers);
+		m.rules = new ArrayList<>();
+		if (rules != null) for (MacroRule r : rules) if (r != null) m.rules.add(r.copy());
 		return m;
 	}
 

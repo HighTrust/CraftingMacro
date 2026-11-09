@@ -9,6 +9,7 @@ A **client-side Fabric mod for Minecraft Java 26.3** that lets you bind keys to 
 - **Custom patterns:** design a 3×3 layout in a fake crafting table, and the mod places the items for you with normal clicks. Works with custom server recipes.
 - **Works inside an open crafting table:** press your macro key while the table is open and it fills the grid and crafts. No `/craft` needed.
 - **World actions:** walk, look, left/right-click (hold or tap), hold a specific item, and mine chosen blocks nearby (walking to them). Includes a ready-made **Shovel Snow** toggle on N.
+- **Automation rules:** while a macro runs, watch for a condition (every X seconds, held item durability low, inventory full, items piling up on the ground). When it hits, the current action pauses, a command such as `/fix` runs, and the macro continues, restarts from step 1, or stops. Set them under Edit > Options > Automation rules.
 - **Animated "+N crafted" feed and a Stats screen** showing totals and the resources used.
 - A dark in-game manager (**Right Shift**) with search, enable switches, keybind conflict warnings, profiles, import/export and notifications.
 
@@ -81,7 +82,7 @@ To add a new step type, add an entry to `StepType` and a `StepHandler` in `StepH
 
 ## Testing status
 
-- **Automated:** 69 JUnit tests pass. They cover config serialization, validation, keybind conflicts, sequence ordering, cooldowns, ingredient math, inventory capacity, cancellation and timeouts, migration, and import safety.
+- **Automated:** 71 JUnit tests pass. They cover config serialization, validation, keybind conflicts, sequence ordering, cooldowns, ingredient math, inventory capacity, cancellation and timeouts, migration, and import safety.
 - **Live:** the mod compiles against 26.3, loads in the development client and reaches the title screen without errors.
 - **Not yet verified live:** in-world crafting in singleplayer, and anything on a multiplayer server. Please report results in Issues.
 
@@ -96,3 +97,5 @@ To add a new step type, add an entry to `StepType` and a `StepHandler` in `StepH
 ## License
 
 [MIT](LICENSE)
+
+UI text uses [Inter](https://rsms.me/inter/) (SIL Open Font License) and icons from [Lucide](https://lucide.dev) (ISC License); license files are in `assets/craftingmacro/font/`.

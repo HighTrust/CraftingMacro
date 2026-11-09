@@ -25,6 +25,8 @@ public final class Settings {
 	public boolean backgroundMining = false;
 	/** Maximum ticks to wait for the server to open a screen or confirm an inventory change. */
 	public int serverTimeoutTicks = 60;
+	/** Menu style: "dark", "glass" (blurred, see-through) or "clear" (see-through, no blur). */
+	public String theme = "dark";
 
 	public Settings copy() {
 		Settings s = new Settings();
@@ -38,6 +40,7 @@ public final class Settings {
 		s.preferInventoryGrid = preferInventoryGrid;
 		s.serverTimeoutTicks = serverTimeoutTicks;
 		s.backgroundMining = backgroundMining;
+		s.theme = theme;
 		return s;
 	}
 }

@@ -74,6 +74,11 @@ public final class SettingsScreen extends BaseScreen {
 			}
 		});
 
+		FlatButton[] themeBtn = new FlatButton[1];
+		themeBtn[0] = button(panelX + 12, panelY + panelH - 26, 110, "Theme: " + Theme.mode().displayName(), FlatButton.Style.NORMAL, () -> {
+			cycleTheme();
+			themeBtn[0].setLabel("Theme: " + Theme.mode().displayName());
+		}).tooltip("Dark: solid panels. Glass: see-through with the world blurred behind. Clear: see-through, no blur.");
 		button(panelX + panelW - 88, panelY + panelH - 26, 80, "Done", FlatButton.Style.PRIMARY, this::onClose);
 	}
 

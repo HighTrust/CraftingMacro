@@ -5,15 +5,41 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 /**
  * Colors and drawing helpers. Style: near-black panels with a faint violet haze, a
  * violet-to-pink accent gradient, soft outer glow, rounded corners and accent bars.
- * All colors are ARGB.
+ * All colors are ARGB. Surface colors depend on the active {@link Mode} (dark, glass, clear).
  */
 public final class Theme {
-	public static final int OVERLAY = 0xC0050308;
-	public static final int PANEL = 0xF50C0912;
-	public static final int PANEL_BORDER = 0xFF2A1D3B;
-	public static final int SURFACE = 0xFF16111E;
-	public static final int SURFACE_HOVER = 0xFF201829;
-	public static final int SURFACE_SELECTED = 0xFF2A1D3B;
+	/** Visual style of the panels. GLASS blurs the world behind the menu; CLEAR shows it untouched. */
+	public enum Mode {
+		DARK("Dark"), GLASS("Glass"), CLEAR("Clear");
+
+		private final String displayName;
+
+		Mode(String displayName) {
+			this.displayName = displayName;
+		}
+
+		public String displayName() {
+			return displayName;
+		}
+
+		public Mode next() {
+			return values()[(ordinal() + 1) % values().length];
+		}
+
+		public static Mode parse(String s) {
+			for (Mode m : values()) if (m.name().equalsIgnoreCase(s)) return m;
+			return DARK;
+		}
+	}
+
+	private static Mode mode = Mode.DARK;
+
+	public static int OVERLAY = 0xC0050308;
+	public static int PANEL = 0xF50C0912;
+	public static int PANEL_BORDER = 0xFF2A1D3B;
+	public static int SURFACE = 0xFF16111E;
+	public static int SURFACE_HOVER = 0xFF201829;
+	public static int SURFACE_SELECTED = 0xFF2A1D3B;
 	public static final int ACCENT = 0xFFB04DFF;
 	public static final int ACCENT_HOVER = 0xFFC575FF;
 	public static final int ACCENT2 = 0xFFFF4FA8;
@@ -24,9 +50,97 @@ public final class Theme {
 	public static final int TEXT = 0xFFF2ECF8;
 	public static final int TEXT_DIM = 0xFFA399B3;
 	public static final int TEXT_FAINT = 0xFF665C75;
-	public static final int SWITCH_OFF = 0xFF2B2335;
+	public static int SWITCH_OFF = 0xFF2B2335;
+
+	/** Slightly darker strip for sidebars. */
+	public static int SIDEBAR = 0xFF0A0710;
 
 	private Theme() {
+	}
+
+	public static Mode mode() {
+		return mode;
+	}
+
+	/** True when the world behind menus should be blurred. */
+	public static boolean blur() {
+		return mode == Mode.GLASS;
+	}
+
+	public static void apply(String name) {
+		apply(Mode.parse(name));
+	}
+
+	public static void apply(Mode m) {
+		mode = m;
+		switch (m) {
+			case GLASS -> {
+				OVERLAY = 0x38050308;
+				PANEL = 0x8C0E0A16;
+				PANEL_BORDER = 0x55D9C2FF;
+				SURFACE = 0x5A1C1528;
+				SURFACE_HOVER = 0x80281E38;
+				SURFACE_SELECTED = 0x9A33244A;
+				SWITCH_OFF = 0x8C3A3048;
+				SIDEBAR = 0x40000000;
+			}
+			case CLEAR -> {
+				OVERLAY = 0x00000000;
+				PANEL = 0x4A0C0912;
+				PANEL_BORDER = 0x40D9C2FF;
+				SURFACE = 0x40141020;
+				SURFACE_HOVER = 0x66201830;
+				SURFACE_SELECTED = 0x882A1D3B;
+				SWITCH_OFF = 0x803A3048;
+				SIDEBAR = 0x30000000;
+			}
+			default -> {
+				OVERLAY = 0xC0050308;
+				PANEL = 0xF50C0912;
+				PANEL_BORDER = 0xFF2A1D3B;
+				SURFACE = 0xFF16111E;
+				SURFACE_HOVER = 0xFF201829;
+				SURFACE_SELECTED = 0xFF2A1D3B;
+				SWITCH_OFF = 0xFF2B2335;
+				SIDEBAR = 0xFF0A0710;
+			}
+		}
+	}
+
+	/** 1px rounded outline that matches {@link #rounded}; safe with translucent fills. */
+	public static void outline(GuiGraphicsExtractor g, int x, int y, int w, int h, int color) {
+		if (w <= 6 || h <= 6) {
+			g.fill(x, y, x + w, y + 1, color);
+			g.fill(x, y + h - 1, x + w, y + h, color);
+			g.fill(x, y + 1, x + 1, y + h - 1, color);
+			g.fill(x + w - 1, y + 1, x + w, y + h - 1, color);
+			return;
+		}
+		g.fill(x + 3, y, x + w - 3, y + 1, color);
+		g.fill(x + 3, y + h - 1, x + w - 3, y + h, color);
+		g.fill(x, y + 3, x + 1, y + h - 3, color);
+		g.fill(x + w - 1, y + 3, x + w, y + h - 3, color);
+		g.fill(x + 1, y + 1, x + 3, y + 2, color);
+		g.fill(x + w - 3, y + 1, x + w - 1, y + 2, color);
+		g.fill(x + 1, y + h - 2, x + 3, y + h - 1, color);
+		g.fill(x + w - 3, y + h - 2, x + w - 1, y + h - 1, color);
+		g.fill(x + 1, y + 2, x + 2, y + 3, color);
+		g.fill(x + w - 2, y + 2, x + w - 1, y + 3, color);
+		g.fill(x + 1, y + h - 3, x + 2, y + h - 2, color);
+		g.fill(x + w - 2, y + h - 3, x + w - 1, y + h - 2, color);
+	}
+
+	/** Translucent-friendly card: fill plus outline (outline drawn on top, never underneath). */
+	public static void card(GuiGraphicsExtractor g, int x, int y, int w, int h, int fill, int border) {
+		rounded(g, x, y, w, h, fill);
+		outline(g, x, y, w, h, border);
+	}
+
+	/** Cubic ease-out for 0..1. */
+	public static float easeOut(float t) {
+		t = Math.max(0, Math.min(1, t));
+		float u = 1 - t;
+		return 1 - u * u * u;
 	}
 
 	/** Rounded filled rectangle (radius 3, anti-aliased look via trimmed corner rows). */
@@ -44,9 +158,13 @@ public final class Theme {
 
 	/** Rounded panel with a 1px border. */
 	public static void panel(GuiGraphicsExtractor g, int x, int y, int w, int h, int fill, int border) {
-		glow(g, x, y, w, h, ACCENT, 0.5f);
-		rounded(g, x, y, w, h, border);
-		rounded(g, x + 1, y + 1, w - 2, h - 2, fill);
+		glow(g, x, y, w, h, ACCENT, mode == Mode.DARK ? 0.5f : 0.8f);
+		rounded(g, x, y, w, h, fill);
+		outline(g, x, y, w, h, border);
+		if (mode != Mode.DARK) {
+			// glass sheen: a soft white highlight along the top edge
+			g.fillGradient(x + 3, y + 1, x + w - 3, y + 14, 0x16FFFFFF, 0x00FFFFFF);
+		}
 		// faint violet haze at the top and pink at the bottom-left
 		g.fillGradient(x + 2, y + 2, x + w - 2, y + Math.min(h / 2, 90), 0x1CB04DFF, 0x00B04DFF);
 		g.fillGradient(x + 2, y + h - Math.min(h / 3, 60), x + w / 2, y + h - 2, 0x00FF4FA8, 0x10FF4FA8);

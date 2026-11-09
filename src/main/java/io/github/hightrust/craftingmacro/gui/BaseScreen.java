@@ -21,7 +21,7 @@ public abstract class BaseScreen extends Screen {
 	private final long openedAt = System.currentTimeMillis();
 
 	protected BaseScreen(String title, Screen parent) {
-		super(Component.literal(title));
+		super(net.minecraft.client.Minecraft.getInstance(), Fonts.ui(), Component.literal(title));
 		this.parent = parent;
 	}
 
@@ -36,6 +36,7 @@ public abstract class BaseScreen extends Screen {
 
 	@Override
 	protected void init() {
+		Theme.apply(io.github.hightrust.craftingmacro.MacroManager.get().settings().theme);
 		panelW = Math.min(preferredWidth(), width - 16);
 		panelH = Math.min(preferredHeight(), height - 16);
 		panelX = (width - panelW) / 2;
@@ -53,7 +54,32 @@ public abstract class BaseScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
 		float fade = Math.min(1f, (System.currentTimeMillis() - openedAt) / 150f);
+		if (Theme.blur() && minecraft.level != null) extractBlurredBackground(g);
 		g.fill(0, 0, width, height, Theme.withAlpha(Theme.OVERLAY, fade));
+		pushOpenAnimation(g);
+		extractPanel(g);
+		g.pose().popMatrix();
+	}
+
+	/** Open animation progress, 0..1 (eased). */
+	protected float openProgress() {
+		return Theme.easeOut((System.currentTimeMillis() - openedAt) / 240f);
+	}
+
+	/** Scales the panel up from 94% and lifts it slightly while the screen opens. */
+	private void pushOpenAnimation(GuiGraphicsExtractor g) {
+		float p = openProgress();
+		float s = 0.94f + 0.06f * p;
+		float cx = panelX + panelW / 2f;
+		float cy = panelY + panelH / 2f;
+		g.pose().pushMatrix();
+		g.pose().translate(cx, cy + (1 - p) * 8);
+		g.pose().scale(s, s);
+		g.pose().translate(-cx, -cy);
+	}
+
+	/** Draws the panel frame and header. Screens with a custom layout override this. */
+	protected void extractPanel(GuiGraphicsExtractor g) {
 		Theme.panel(g, panelX, panelY, panelW, panelH, Theme.PANEL, Theme.PANEL_BORDER);
 		// header: accent bar + title + fading gradient divider
 		Theme.accentBar(g, panelX + 8, panelY + 7, 10, 1f);
@@ -63,9 +89,21 @@ public abstract class BaseScreen extends Screen {
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
+		pushOpenAnimation(g);
 		extractContent(g, mouseX, mouseY, a);
 		super.extractRenderState(g, mouseX, mouseY, a);
 		extractOverlay(g, mouseX, mouseY, a);
+		g.pose().popMatrix();
+	}
+
+	/** Switches to the next menu style (Dark, Glass, Clear), saves it, and rebuilds the screen. */
+	protected void cycleTheme() {
+		var mgr = io.github.hightrust.craftingmacro.MacroManager.get();
+		Theme.Mode next = Theme.mode().next();
+		mgr.settings().theme = next.name().toLowerCase(java.util.Locale.ROOT);
+		mgr.markDirty();
+		Theme.apply(next);
+		mgr.notifier().info("Theme: " + next.displayName(), true);
 	}
 
 	/** Custom drawing below widgets. */

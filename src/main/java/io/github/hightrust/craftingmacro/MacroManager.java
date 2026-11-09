@@ -33,6 +33,7 @@ public final class MacroManager {
 	private ModConfig config;
 	private final MacroExecutor executor;
 	private final Notifier notifier;
+	private final io.github.hightrust.craftingmacro.exec.RuleEngine rules;
 	private long dirtySince = -1;
 	private final io.github.hightrust.craftingmacro.notify.CraftLog craftLog;
 
@@ -48,6 +49,7 @@ public final class MacroManager {
 		this.craftLog = new io.github.hightrust.craftingmacro.notify.CraftLog(configDir);
 		this.executor = new MacroExecutor(StepHandlers.create(this::settings), System::currentTimeMillis);
 		this.executor.setEndHook(this::onRunEnd);
+		this.rules = new io.github.hightrust.craftingmacro.exec.RuleEngine(executor, msg -> notifier.info(msg, true));
 		this.executor.setListener(new MacroExecutor.Listener() {
 			@Override
 			public void onStarted(MacroRun run) {
@@ -97,6 +99,12 @@ public final class MacroManager {
 
 	public MacroExecutor executor() {
 		return executor;
+	}
+
+	/** Ticks the executor and then the automation rules of running macros. */
+	public void tickMacros() {
+		executor.tick();
+		rules.tick(System.currentTimeMillis());
 	}
 
 	public Notifier notifier() {
@@ -198,6 +206,7 @@ public final class MacroManager {
 			if (!fromHold) notifier.warn(macro.name + " is not enabled for this server");
 			return false;
 		}
+		if (!fromHold) rules.reset(macro.id);
 		Macro snapshot = macro.copy(false);
 		MacroExecutor.StartResult result = executor.start(snapshot, fromHold, unlimited);
 		switch (result) {

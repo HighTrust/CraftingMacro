@@ -53,7 +53,7 @@ public class ToggleSwitch extends AbstractWidget {
 		Theme.toggle(g, x, y, knob, hover);
 		String label = getMessage().getString();
 		if (!label.isEmpty()) {
-			Font font = Minecraft.getInstance().font;
+			Font font = io.github.hightrust.craftingmacro.gui.Fonts.ui();
 			g.text(font, label, x + SWITCH_W + 6, y + 2, active ? Theme.TEXT : Theme.TEXT_FAINT, false);
 		}
 	}

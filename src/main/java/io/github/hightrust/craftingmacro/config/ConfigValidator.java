@@ -48,6 +48,7 @@ public final class ConfigValidator {
 		Settings s = config.settings;
 		s.serverTimeoutTicks = MacroValidator.clamp(s.serverTimeoutTicks, 10, 400);
 		if (s.craftOpenCommand == null) s.craftOpenCommand = "";
+		if (s.theme == null || !java.util.List.of("dark", "glass", "clear").contains(s.theme.toLowerCase(Locale.ROOT))) s.theme = "dark";
 		if (s.craftOpenCommand.length() > MacroValidator.MAX_TEXT) s.craftOpenCommand = s.craftOpenCommand.substring(0, MacroValidator.MAX_TEXT);
 
 		if (config.profiles == null) config.profiles = new ArrayList<>();

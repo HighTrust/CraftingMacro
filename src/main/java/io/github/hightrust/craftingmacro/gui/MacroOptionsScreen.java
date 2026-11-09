@@ -26,7 +26,7 @@ public final class MacroOptionsScreen extends BaseScreen {
 
 	@Override
 	protected int preferredHeight() {
-		return 250;
+		return 274;
 	}
 
 	@Override
@@ -62,6 +62,12 @@ public final class MacroOptionsScreen extends BaseScreen {
 			if (!m.servers.contains(cur)) m.servers.add(cur);
 			rebuildWidgets();
 		}).tooltip("Add this server (" + MacroManager.currentServer() + ")");
+
+		y += 24;
+		int n = m.rules == null ? 0 : m.rules.size();
+		button(x, y, w, "Automation rules" + (n > 0 ? " (" + n + ")" : "") + "...", FlatButton.Style.NORMAL,
+				() -> minecraft.gui.setScreen(new RulesScreen(this, m)))
+				.tooltip("Run /fix when durability is low, restart when the inventory is full, pause every X minutes...");
 
 		button(panelX + panelW - 70, panelY + panelH - 26, 60, "Done", FlatButton.Style.PRIMARY, this::onClose);
 	}

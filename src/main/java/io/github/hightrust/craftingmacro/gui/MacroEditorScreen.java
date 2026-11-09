@@ -296,19 +296,19 @@ public final class MacroEditorScreen extends BaseScreen {
 			g.text(font, String.valueOf(i + 1), stepsX + 5, y + 4, Theme.TEXT_FAINT, false);
 			boolean bad = MacroValidator.validateStep(s, i) != null;
 			g.text(font, ellipsize(s.summary(), stepsW - 20 - ICON_W * 3), stepsX + 17, y + 4, bad ? Theme.WARNING : Theme.TEXT, false);
-			icon(g, "▲", right - ICON_W * 3, y, mouseX, mouseY, i > 0, Theme.TEXT);
-			icon(g, "▼", right - ICON_W * 2, y, mouseX, mouseY, i < working.steps.size() - 1, Theme.TEXT);
-			icon(g, "✕", right - ICON_W, y, mouseX, mouseY, true, Theme.DANGER);
+			icon(g, Fonts.Icon.ARROW_UP, right - ICON_W * 3, y, mouseX, mouseY, i > 0, Theme.TEXT);
+			icon(g, Fonts.Icon.ARROW_DOWN, right - ICON_W * 2, y, mouseX, mouseY, i < working.steps.size() - 1, Theme.TEXT);
+			icon(g, Fonts.Icon.TRASH, right - ICON_W, y, mouseX, mouseY, true, Theme.DANGER);
 		}
 		if (!error.isEmpty()) {
 			g.text(font, ellipsize(error, panelW - 16), panelX + 8, panelY + panelH + 4, Theme.DANGER, false);
 		}
 	}
 
-	private void icon(GuiGraphicsExtractor g, String glyph, int x, int y, int mx, int my, boolean enabled, int hotColor) {
+	private void icon(GuiGraphicsExtractor g, int glyph, int x, int y, int mx, int my, boolean enabled, int hotColor) {
 		boolean hov = enabled && inside(mx, my, x, y, ICON_W, ROW_H - 2);
 		int color = !enabled ? 0x00000000 : hov ? hotColor : Theme.TEXT_FAINT;
-		if ((color >>> 24) != 0) g.centeredText(font, glyph, x + ICON_W / 2, y + 4, color);
+		if ((color >>> 24) != 0) g.centeredText(font, Fonts.icon(glyph), x + ICON_W / 2, y + 3, color);
 	}
 
 	private String keyWarning() {

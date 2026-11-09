@@ -26,6 +26,8 @@ public final class MacroRun {
 	private String message = "";
 	private int warnings;
 	private String lastWarning = "";
+	private long pausedUntil;
+	private String pauseReason = "";
 
 	public MacroRun(Macro macro, Map<?, StepHandler> handlers, LongSupplier clock, boolean unlimited) {
 		this(macro, handlers, clock);
@@ -81,8 +83,35 @@ public final class MacroRun {
 		return index >= 0 && index < steps.size() ? steps.get(index) : null;
 	}
 
+	/** True while a rule has paused this run. */
+	public boolean paused() {
+		return !isFinished() && ctx.nowMs() < pausedUntil;
+	}
+
+	public String pauseReason() {
+		return pauseReason;
+	}
+
+	/**
+	 * Interrupts the current step (releasing any held keys) and pauses for {@code pauseMs}.
+	 * Afterwards the interrupted step starts over, or with {@code restart} the whole macro does.
+	 */
+	public void interrupt(long pauseMs, boolean restart, String reason) {
+		if (isFinished()) return;
+		if (stepActive && index >= 0 && index < steps.size()) {
+			safeCancel(steps.get(index));
+			index--;
+		}
+		stepActive = false;
+		if (restart) index = -1;
+		if (state == State.DELAY) state = State.RUNNING;
+		pausedUntil = ctx.nowMs() + Math.max(0, pauseMs);
+		pauseReason = reason == null ? "" : reason;
+	}
+
 	public void tick() {
 		if (isFinished()) return;
+		if (ctx.nowMs() < pausedUntil) return;
 		if (state == State.DELAY) {
 			if (ctx.nowMs() < startAtMs) return;
 			state = State.RUNNING;

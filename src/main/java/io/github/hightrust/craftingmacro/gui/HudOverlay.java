@@ -18,7 +18,7 @@ public final class HudOverlay implements HudElement {
 		MacroManager manager = MacroManager.get();
 		Minecraft mc = Minecraft.getInstance();
 		if (manager == null) return;
-		Font font = mc.font;
+		Font font = Fonts.ui();
 
 		if (manager.settings().showRunningIndicator) {
 			int y = 4;

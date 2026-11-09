@@ -21,6 +21,7 @@ public final class CraftingMacroClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		MacroManager.init(FabricLoader.getInstance().getConfigDir().resolve(MOD_ID));
+		io.github.hightrust.craftingmacro.gui.Theme.apply(MacroManager.get().settings().theme);
 		KeybindManager.register();
 
 		ClientTickEvents.START_CLIENT_TICK.register(KeybindManager::startTick);
@@ -42,8 +43,8 @@ public final class CraftingMacroClient implements ClientModInitializer {
 			if (screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>) {
 				net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterExtract(screen).register(
 						(s, g, mx, my, delta) -> {
-							HudOverlay.drawCraftFeed(g, mc.font);
-							HudOverlay.drawBanner(g, mc.font);
+							HudOverlay.drawCraftFeed(g, io.github.hightrust.craftingmacro.gui.Fonts.ui());
+							HudOverlay.drawBanner(g, io.github.hightrust.craftingmacro.gui.Fonts.ui());
 						});
 			}
 		});
@@ -63,7 +64,7 @@ public final class CraftingMacroClient implements ClientModInitializer {
 			if (mc.player.isDeadOrDying()) {
 				if (!manager.executor().isIdle()) manager.stopAll("Player died");
 			} else {
-				manager.executor().tick();
+				manager.tickMacros();
 			}
 		}
 		manager.tickSave();
