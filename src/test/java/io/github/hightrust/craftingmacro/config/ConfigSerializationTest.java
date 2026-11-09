@@ -23,7 +23,7 @@ class ConfigSerializationTest {
 
 		assertEquals(ModConfig.CURRENT_VERSION, loaded.configVersion);
 		assertEquals("Default", loaded.activeProfile);
-		assertEquals(3, loaded.active().macros.size());
+		assertEquals(4, loaded.active().macros.size());
 		Macro k = loaded.active().macros.get(0);
 		assertEquals("key.keyboard.k", k.key.key);
 		assertEquals(StepType.COMMAND, k.steps.get(0).type);
@@ -71,7 +71,7 @@ class ConfigSerializationTest {
 		Files.writeString(dir.resolve(ConfigStore.CONFIG_FILE), "{ this is not json");
 		ConfigStore store = new ConfigStore(dir);
 		ConfigStore.LoadResult result = store.load();
-		assertEquals(3, result.config().active().macros.size());
+		assertEquals(4, result.config().active().macros.size());
 		assertFalse(result.warnings().isEmpty());
 		try (var files = Files.list(dir)) {
 			assertTrue(files.anyMatch(f -> f.getFileName().toString().startsWith(ConfigStore.CONFIG_FILE + ".broken-")));

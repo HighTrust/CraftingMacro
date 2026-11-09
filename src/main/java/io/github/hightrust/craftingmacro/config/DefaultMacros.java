@@ -28,7 +28,25 @@ public final class DefaultMacros {
 				.withDescription("Performs three snow-layer crafting operations (18 layers) and collects the results.")
 				.withStep(MacroStep.craft("minecraft:snow", 18));
 
-		return List.of(craftTable, snowBlock, snowLayers);
+		return List.of(craftTable, snowBlock, snowLayers, shovelSnow());
+	}
+
+	/** Toggle on N: hold a shovel and mine snow nearby, walking to it. Press N again to stop. */
+	public static Macro shovelSnow() {
+		MacroStep select = MacroStep.of(io.github.hightrust.craftingmacro.macro.StepType.SELECT_ITEM);
+		select.text = "*_shovel";
+		MacroStep mine = MacroStep.of(io.github.hightrust.craftingmacro.macro.StepType.MINE_BLOCKS);
+		mine.text = "minecraft:snow, minecraft:snow_block";
+		mine.amount = 0;
+		mine.slot = 8;
+		mine.shift = true;
+		Macro m = new Macro("Shovel Snow", MacroType.SEQUENCE, KeyCombo.of("key.keyboard.n"))
+				.withDescription("Toggle with N: holds your shovel and mines all snow nearby, walking to it.")
+				.withStep(select)
+				.withStep(mine);
+		m.trigger = io.github.hightrust.craftingmacro.macro.TriggerMode.TOGGLE;
+		m.cooldownMs = 300;
+		return m;
 	}
 
 	public static Profile defaultProfile() {
@@ -41,6 +59,7 @@ public final class DefaultMacros {
 		ModConfig c = new ModConfig();
 		c.profiles.add(defaultProfile());
 		c.activeProfile = "Default";
+		c.presetsVersion = ModConfig.CURRENT_PRESETS;
 		return c;
 	}
 }

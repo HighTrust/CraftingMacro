@@ -115,6 +115,11 @@ public final class MacroStep {
 			case OPEN_CRAFTING -> "Open crafting" + (text == null || text.isBlank() ? "" : " via " + text);
 			case CRAFT -> "Craft " + amount + "x " + prettyItem(text);
 			case CRAFT_PATTERN -> "Craft pattern " + amount + "x" + (text == null || text.isBlank() ? "" : " (" + text + ")");
+			case WALK -> "Walk " + (text == null || text.isBlank() ? "forward" : text) + (shift ? " + jump" : "") + " for " + amount + " ticks";
+			case LOOK -> "Look at " + text;
+			case MOUSE_CLICK -> (button == 1 ? "Right" : "Left") + (amount > 0 ? "-hold " + amount + " ticks" : "-click");
+			case SELECT_ITEM -> "Hold " + text;
+			case MINE_BLOCKS -> "Mine " + (amount > 0 ? amount + "x " : "") + text + (shift ? " (walk to them)" : "");
 			case WAIT_TICKS -> "Wait " + amount + " ticks";
 			case WAIT_MS -> "Wait " + amount + " ms";
 			case CLICK_SLOT -> (shift ? "Shift-" : "") + (button == 1 ? "right" : "left") + "-click slot " + slot;

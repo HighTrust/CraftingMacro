@@ -20,6 +20,9 @@ public final class MacroValidator {
 	public static final int MAX_SERVERS = 32;
 
 	private static final Pattern ITEM_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
+	/** Item/block id, optionally with * wildcards and without namespace (e.g. *_shovel). */
+	private static final Pattern ITEM_PATTERN = Pattern.compile("([a-z0-9_.*-]+:)?[a-z0-9_./*-]+");
+	public static final java.util.Set<String> WALK_DIRS = java.util.Set.of("forward", "back", "left", "right");
 	private static final Pattern KEY_NAME = Pattern.compile("key\\.(keyboard|mouse)\\.[a-z0-9_.]+");
 
 	private MacroValidator() {
@@ -64,6 +67,23 @@ public final class MacroValidator {
 				}
 				if (!any) yield "design a pattern (put at least one item in the grid)";
 				if (s.amount < 1) yield "amount must be at least 1";
+				yield null;
+			}
+			case WALK -> {
+				if (s.amount < 1) yield "walk for at least 1 tick";
+				for (String d : (s.text == null ? "" : s.text).split("[,+ ]+")) {
+					if (!d.isBlank() && !WALK_DIRS.contains(d.strip().toLowerCase(java.util.Locale.ROOT))) yield "unknown direction: " + d;
+				}
+				yield null;
+			}
+			case LOOK -> s.text != null && s.text.strip().matches("-?\\d{1,3}(\\.\\d+)?\\s*,\\s*-?\\d{1,2}(\\.\\d+)?") ? null : "enter yaw,pitch e.g. 90,30";
+			case MOUSE_CLICK -> s.amount < 0 ? "hold time cannot be negative" : null;
+			case SELECT_ITEM -> s.text != null && ITEM_PATTERN.matcher(s.text.strip()).matches() ? null : "enter an item id, e.g. *_shovel";
+			case MINE_BLOCKS -> {
+				if (s.text == null || s.text.isBlank()) yield "enter block ids, e.g. minecraft:snow, minecraft:snow_block";
+				for (String id : s.text.split(",")) {
+					if (!id.isBlank() && !ITEM_PATTERN.matcher(id.strip()).matches()) yield "invalid block id: " + id.strip();
+				}
 				yield null;
 			}
 			case WAIT_TICKS, WAIT_MS -> s.amount < 0 ? "wait cannot be negative" : null;
@@ -130,6 +150,17 @@ public final class MacroValidator {
 				g.replaceAll(id -> ITEM_ID.matcher(id).matches() ? id : "");
 				s.pattern = new ArrayList<>(g);
 				s.text = clip(s.text.strip(), MAX_NAME);
+			}
+			case WALK -> {
+				s.amount = clamp(s.amount, 1, MAX_WAIT_TICKS);
+				s.text = s.text.strip().toLowerCase(java.util.Locale.ROOT);
+			}
+			case MOUSE_CLICK -> s.amount = clamp(s.amount, 0, MAX_WAIT_TICKS);
+			case SELECT_ITEM -> s.text = s.text.strip().toLowerCase(java.util.Locale.ROOT);
+			case MINE_BLOCKS -> {
+				s.amount = clamp(s.amount, 0, 1000);
+				s.slot = clamp(s.slot == 0 ? 6 : s.slot, 1, 16);
+				s.text = s.text.strip().toLowerCase(java.util.Locale.ROOT);
 			}
 			case WAIT_TICKS -> s.amount = clamp(s.amount, 0, MAX_WAIT_TICKS);
 			case WAIT_MS -> s.amount = clamp(s.amount, 0, MAX_WAIT_MS);

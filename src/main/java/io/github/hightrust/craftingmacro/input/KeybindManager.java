@@ -59,6 +59,7 @@ public final class KeybindManager {
 	/** End of tick: vanilla-style mappings (only fire with no screen open, like vanilla keys). */
 	public static void endTick(Minecraft mc) {
 		while (stopAll.consumeClick()) {
+			toggledOn.clear();
 			MacroManager.get().stopAll("Stop key pressed");
 		}
 		while (openMenu.consumeClick()) {

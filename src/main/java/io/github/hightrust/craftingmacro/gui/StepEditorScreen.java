@@ -37,7 +37,7 @@ public final class StepEditorScreen extends BaseScreen {
 
 	@Override
 	protected int preferredHeight() {
-		return 260;
+		return 280;
 	}
 
 	/** Space taken by the type selector plus its wrapped description. */
@@ -88,6 +88,66 @@ public final class StepEditorScreen extends BaseScreen {
 						step.amount = r.amount;
 						step.text = r.text;
 					}))).tooltip("Open the crafting grid designer");
+			case WALK -> {
+				String dir = step.text == null || step.text.isBlank() ? "forward" : step.text;
+				button(fx, y, fw, "Direction: " + dir, FlatButton.Style.NORMAL, () -> {
+					List<String> dirs = List.of("forward", "back", "left", "right", "forward+left", "forward+right");
+					int i = dirs.indexOf(step.text == null || step.text.isBlank() ? "forward" : step.text);
+					step.text = dirs.get((i + 1) % dirs.size());
+					rebuildWidgets();
+				}).tooltip("Click to change direction");
+				y += 22;
+				amountField(fx, y, fw, "How long to walk, in ticks (20 = 1 second)");
+				y += 22;
+				toggle(fx, y, fw, "Jump while walking", step.shift, null, v -> step.shift = v);
+			}
+			case LOOK -> {
+				EditBox look = textField(fx, y, fw - 70, step.text, 32, "yaw,pitch", "Yaw: 0 south, 90 west, 180 north, -90 east. Pitch: -90 up, 90 down");
+				look.setResponder(s -> step.text = s);
+				button(fx + fw - 66, y, 66, "Current", FlatButton.Style.NORMAL, () -> {
+					if (minecraft.player != null) {
+						step.text = Math.round(net.minecraft.util.Mth.wrapDegrees(minecraft.player.getYRot())) + "," + Math.round(minecraft.player.getXRot());
+						rebuildWidgets();
+					}
+				}).tooltip("Use the direction you are looking right now");
+			}
+			case MOUSE_CLICK -> {
+				toggle(fx, y, fw, step.button == 1 ? "Right click (use / place)" : "Left click (attack / mine)", step.button == 1,
+						"Off = left click, on = right click", v -> {
+							step.button = v ? 1 : 0;
+							rebuildWidgets();
+						});
+				y += 22;
+				amountField(fx, y, fw, "0 = a single click. More = hold the button this many ticks");
+			}
+			case SELECT_ITEM -> {
+				EditBox item = textField(fx, y, fw - 50, step.text, 64, "*_shovel", "Item id. * is a wildcard: *_shovel matches any shovel");
+				item.setResponder(s -> step.text = s);
+				button(fx + fw - 46, y, 46, "Pick", FlatButton.Style.NORMAL,
+						() -> minecraft.gui.setScreen(new ItemPickerScreen(this, id -> step.text = id)));
+			}
+			case MINE_BLOCKS -> {
+				EditBox blocks = textField(fx, y, fw, step.text, MacroValidator.MAX_TEXT, "minecraft:snow, minecraft:snow_block",
+						"Comma-separated block ids; * wildcards allowed (e.g. *_log)");
+				blocks.setResponder(s -> step.text = s);
+				y += 20;
+				button(fx, y, fw, "+ Block I'm looking at", FlatButton.Style.GHOST, () -> {
+					if (minecraft.level != null && minecraft.hitResult instanceof net.minecraft.world.phys.BlockHitResult bhr
+							&& minecraft.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+						String id = BuiltInRegistries.BLOCK.getKey(minecraft.level.getBlockState(bhr.getBlockPos()).getBlock()).toString();
+						if (!step.text.contains(id)) step.text = step.text.isBlank() ? id : step.text + ", " + id;
+						rebuildWidgets();
+					}
+				}).tooltip("Adds the block under your crosshair");
+				y += 22;
+				EditBox radius = numberField(fx, y, 40, step.slot <= 0 ? 6 : step.slot, "Search radius in blocks (1-16)");
+				radius.setResponder(s -> step.slot = parse(s, 6));
+				EditBox max = numberField(fx + fw - 50, y, 50, step.amount, "Stop after this many blocks (0 = until none left)");
+				max.setResponder(s -> step.amount = parse(s, 0));
+				y += 22;
+				toggle(fx, y, fw, "Walk to blocks out of reach", step.shift, "Walks straight toward the nearest block; skips ones it can't reach",
+						v -> step.shift = v);
+			}
 			case WAIT_TICKS -> amountField(fx, y, fw, "Ticks to wait (20 ticks = 1 second)");
 			case WAIT_MS -> amountField(fx, y, fw, "Milliseconds to wait");
 			case CLICK_SLOT -> {
@@ -145,6 +205,18 @@ public final class StepEditorScreen extends BaseScreen {
 			case WAIT_TICKS -> step.amount = step.amount <= 0 ? 20 : step.amount;
 			case WAIT_MS -> step.amount = step.amount <= 0 ? 500 : step.amount;
 			case CRAFT, REPEAT, CRAFT_PATTERN -> step.amount = Math.max(1, step.amount);
+			case WALK -> step.amount = step.amount <= 1 ? 20 : step.amount;
+			case MINE_BLOCKS -> {
+				if (step.text == null || step.text.isBlank() || step.text.startsWith("/")) step.text = "minecraft:snow, minecraft:snow_block";
+				step.amount = 0;
+				if (step.slot <= 0) step.slot = 6;
+			}
+			case SELECT_ITEM -> {
+				if (step.text == null || step.text.isBlank()) step.text = "*_shovel";
+			}
+			case LOOK -> {
+				if (step.text == null || !step.text.contains(",")) step.text = "0,0";
+			}
 			default -> {
 			}
 		}
@@ -191,6 +263,21 @@ public final class StepEditorScreen extends BaseScreen {
 					}
 				}
 				g.text(font, step.amount + "x", fieldX() + 62, y + 26, Theme.TEXT_DIM, false);
+			}
+			case WALK -> {
+				label(g, "Direction", x, y + 5);
+				label(g, "Ticks", x, y + 26);
+			}
+			case LOOK -> label(g, "Yaw, pitch", x, y + 4);
+			case MOUSE_CLICK -> {
+				label(g, "Button", x, y + 3);
+				label(g, "Hold ticks", x, y + 26);
+			}
+			case SELECT_ITEM -> label(g, "Item", x, y + 4);
+			case MINE_BLOCKS -> {
+				label(g, "Blocks", x, y + 4);
+				label(g, "Radius", x, y + 46);
+				label(g, "Max (0=all)", fieldX() + 46, y + 46);
 			}
 			case WAIT_TICKS -> label(g, "Ticks", x, y + 4);
 			case WAIT_MS -> label(g, "Milliseconds", x, y + 4);

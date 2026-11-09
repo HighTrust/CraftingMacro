@@ -59,6 +59,14 @@ public final class MacroManager {
 			}
 		});
 		for (String w : loaded.warnings()) LOGGER.warn(w);
+		if (config.presetsVersion < ModConfig.CURRENT_PRESETS) {
+			// 1.3.0 added the "Shovel Snow" preset; offer it once to existing setups.
+			Macro shovel = DefaultMacros.shovelSnow();
+			if (config.active().macros.stream().noneMatch(m -> m.name.equalsIgnoreCase(shovel.name))) {
+				config.active().macros.add(shovel);
+			}
+			config.presetsVersion = ModConfig.CURRENT_PRESETS;
+		}
 		saveNow();
 	}
 
@@ -215,11 +223,14 @@ public final class MacroManager {
 
 	public void stopAll(String reason) {
 		int n = executor.stopAll(reason);
+		io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
 		if (n > 0) notifier.warn("Stopped " + n + " macro" + (n == 1 ? "" : "s") + ": " + reason);
 	}
 
 	/** Closes a crafting screen the run opened, unless items would be left in the grid. */
 	private void onRunEnd(MacroRun run) {
+		// Never leave movement / attack / use keys held after a macro ends.
+		io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
 		if (!run.context().openedCraftingScreen || !run.macro().autoClose) return;
 		if (ScreenController.inWorld() && ScreenController.menu() instanceof CraftingMenu menu
 				&& ScreenController.gridEmpty(menu) && menu.getCarried().isEmpty()) {
@@ -232,6 +243,8 @@ public final class MacroManager {
 		lastResult.put(m.id, run.state());
 		switch (run.state()) {
 			case SUCCEEDED -> {
+				// Hold/toggle loops re-run constantly; only report runs that produced something.
+				if (run.context().unlimited && !m.crafts() && (run.message() == null || run.message().isEmpty())) return;
 				String msg = run.message() == null || run.message().isEmpty() ? m.name + " done" : run.message();
 				if (run.warnings() > 0) {
 					notifier.post(msg + " (" + run.warnings() + " warning" + (run.warnings() == 1 ? "" : "s") + ": " + run.lastWarning() + ")", Notifier.Level.WARN, m.notify);

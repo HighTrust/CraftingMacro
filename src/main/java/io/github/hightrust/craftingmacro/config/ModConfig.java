@@ -12,6 +12,9 @@ public final class ModConfig {
 	public int configVersion = CURRENT_VERSION;
 	public Settings settings = new Settings();
 	public String activeProfile = "Default";
+	/** Which built-in presets have been offered; new presets are added once to existing configs. */
+	public int presetsVersion = 0;
+	public static final int CURRENT_PRESETS = 2;
 	public List<Profile> profiles = new ArrayList<>();
 	/** Normalized server address -> profile name, applied automatically on join. */
 	public Map<String, String> serverProfiles = new LinkedHashMap<>();

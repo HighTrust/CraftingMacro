@@ -27,6 +27,14 @@ public final class StepHandlers {
 		map.put(StepType.OPEN_CRAFTING, new OpenCraftingHandler(settings));
 		map.put(StepType.CRAFT, new CraftHandler(settings));
 		map.put(StepType.CRAFT_PATTERN, new PatternHandler(settings));
+		map.put(StepType.WALK, new WalkHandler());
+		map.put(StepType.LOOK, new LookHandler());
+		map.put(StepType.MOUSE_CLICK, new MouseClickHandler());
+		map.put(StepType.SELECT_ITEM, (ctx, step) -> {
+			String err = io.github.hightrust.craftingmacro.world.PlayerActions.selectItem(step.text);
+			return err == null ? StepResult.done() : StepResult.failed(err);
+		});
+		map.put(StepType.MINE_BLOCKS, new MineHandler());
 		map.put(StepType.WAIT_TICKS, new WaitTicksHandler());
 		map.put(StepType.WAIT_MS, new WaitMsHandler());
 		map.put(StepType.CLICK_SLOT, new ClickSlotHandler());
@@ -157,6 +165,125 @@ public final class StepHandlers {
 		@Override
 		public int timeoutTicks(RunContext ctx, MacroStep step) {
 			return ctx.stepState instanceof io.github.hightrust.craftingmacro.crafting.PatternCraftSession s ? s.timeoutTicks() : 600;
+		}
+	}
+
+	/** Holds movement keys (and optionally jump) for {@code amount} ticks. */
+	static final class WalkHandler implements StepHandler {
+		@Override
+		public StepResult start(RunContext ctx, MacroStep step) {
+			if (!ScreenController.inWorld()) return StepResult.failed("Not in a world");
+			var mc = net.minecraft.client.Minecraft.getInstance();
+			String dirs = step.text == null || step.text.isBlank() ? "forward" : step.text;
+			for (String d : dirs.split("[,+ ]+")) {
+				if (!d.isBlank()) io.github.hightrust.craftingmacro.world.PlayerActions.press(io.github.hightrust.craftingmacro.world.PlayerActions.direction(d), true);
+			}
+			if (step.shift) io.github.hightrust.craftingmacro.world.PlayerActions.press(mc.options.keyJump, true);
+			return StepResult.running();
+		}
+
+		@Override
+		public StepResult tick(RunContext ctx, MacroStep step) {
+			if (ctx.stepTicks >= step.amount) {
+				io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
+				return StepResult.done();
+			}
+			return StepResult.running();
+		}
+
+		@Override
+		public void cancel(RunContext ctx, MacroStep step) {
+			io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
+		}
+
+		@Override
+		public int timeoutTicks(RunContext ctx, MacroStep step) {
+			return step.amount + 20;
+		}
+	}
+
+	/** Turns smoothly to an absolute yaw,pitch. */
+	static final class LookHandler implements StepHandler {
+		@Override
+		public StepResult start(RunContext ctx, MacroStep step) {
+			if (!ScreenController.inWorld()) return StepResult.failed("Not in a world");
+			return tick(ctx, step);
+		}
+
+		@Override
+		public StepResult tick(RunContext ctx, MacroStep step) {
+			String[] parts = step.text.split(",");
+			float yaw = Float.parseFloat(parts[0].trim());
+			float pitch = Float.parseFloat(parts[1].trim());
+			return io.github.hightrust.craftingmacro.world.PlayerActions.turnTowards(yaw, pitch) ? StepResult.done() : StepResult.running();
+		}
+
+		@Override
+		public int timeoutTicks(RunContext ctx, MacroStep step) {
+			return 40;
+		}
+	}
+
+	/** Left (attack) or right (use) click; amount > 0 holds the button for that many ticks. */
+	static final class MouseClickHandler implements StepHandler {
+		@Override
+		public StepResult start(RunContext ctx, MacroStep step) {
+			if (!ScreenController.inWorld()) return StepResult.failed("Not in a world");
+			if (!io.github.hightrust.craftingmacro.world.PlayerActions.canUseMouseKeys()) {
+				return StepResult.failed("Clicking needs the game focused with no menu open");
+			}
+			var o = net.minecraft.client.Minecraft.getInstance().options;
+			var key = step.button == 1 ? o.keyUse : o.keyAttack;
+			if (step.amount <= 0) {
+				io.github.hightrust.craftingmacro.world.PlayerActions.click(key);
+				return StepResult.done();
+			}
+			io.github.hightrust.craftingmacro.world.PlayerActions.press(key, true);
+			return StepResult.running();
+		}
+
+		@Override
+		public StepResult tick(RunContext ctx, MacroStep step) {
+			if (ctx.stepTicks >= step.amount) {
+				io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
+				return StepResult.done();
+			}
+			return StepResult.running();
+		}
+
+		@Override
+		public void cancel(RunContext ctx, MacroStep step) {
+			io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
+		}
+
+		@Override
+		public int timeoutTicks(RunContext ctx, MacroStep step) {
+			return step.amount + 20;
+		}
+	}
+
+	static final class MineHandler implements StepHandler {
+		@Override
+		public StepResult start(RunContext ctx, MacroStep step) {
+			if (!ScreenController.inWorld()) return StepResult.failed("Not in a world");
+			ctx.stepState = new io.github.hightrust.craftingmacro.world.MineSession(step.text, step.amount, step.slot <= 0 ? 6 : step.slot, step.shift);
+			return tick(ctx, step);
+		}
+
+		@Override
+		public StepResult tick(RunContext ctx, MacroStep step) {
+			return ((io.github.hightrust.craftingmacro.world.MineSession) ctx.stepState).tick();
+		}
+
+		@Override
+		public void cancel(RunContext ctx, MacroStep step) {
+			if (ctx.stepState instanceof io.github.hightrust.craftingmacro.world.MineSession s) s.cancel();
+			io.github.hightrust.craftingmacro.world.PlayerActions.releaseAll();
+		}
+
+		@Override
+		public int timeoutTicks(RunContext ctx, MacroStep step) {
+			return 20 * 60 * 30;
 		}
 	}
 
